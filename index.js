@@ -171,6 +171,63 @@ app.post("/diet-log", express.json(), async (req, res) => {
   }
 });
 
+app.delete("/diet-log/:row", async (req, res) => {
+  try {
+    const row = Number(req.params.row);
+
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `Diet_Log!A${row}:R${row}`,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete meal" });
+  }
+});
+
+app.put("/diet-log/:row", express.json(), async (req, res) => {
+  try {
+    const row = Number(req.params.row);
+
+    const values = [
+      [
+        req.body.date,
+        req.body.day,
+        req.body.time,
+        req.body.mealType,
+        req.body.context,
+        req.body.proteinSource,
+        req.body.veggies,
+        req.body.carbsFood,
+        req.body.fatsFood,
+        req.body.portionNotes,
+        req.body.hunger,
+        req.body.fullness,
+        "",
+        req.body.notes,
+        req.body.calories,
+        req.body.protein,
+        req.body.carbs,
+        req.body.fats,
+      ],
+    ];
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `Diet_Log!A${row}:R${row}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update meal" });
+  }
+});
+
 // --------------------
 // SERVER START
 // --------------------
