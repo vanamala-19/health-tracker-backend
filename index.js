@@ -95,7 +95,7 @@ app.get("/diet-log", async (req, res) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: "Diet_Log!A2:H",
+      range: "Diet_Log!A2:R",
       valueRenderOption: "FORMATTED_VALUE",
     });
 
