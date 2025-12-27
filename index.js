@@ -9,8 +9,8 @@ app.use(cors());
 // Google Sheets Auth
 // --------------------
 const auth = new google.auth.GoogleAuth({
-  keyFile: "credentials.json", // Render secret file
-  scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+  keyFile: "credentials.json",
+  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
 const sheets = google.sheets({ version: "v4", auth });
@@ -87,6 +87,87 @@ app.get("/sheets", async (req, res) => {
   } catch (err) {
     console.error("Sheets error:", err.message);
     res.status(500).json({ error: "Failed to fetch sheet names" });
+  }
+});
+
+// diet logs
+app.get("/diet-log", async (req, res) => {
+  try {
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "Diet_Log!A2:H",
+      valueRenderOption: "FORMATTED_VALUE",
+    });
+
+    res.json(result.data.values || []);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch diet log" });
+  }
+});
+
+app.post("/diet-log", express.json(), async (req, res) => {
+  try {
+    const {
+      date,
+      mealType,
+      context,
+      proteinSource,
+      veggies,
+      carbsFood,
+      fatsFood,
+      portionNotes,
+      hunger,
+      fullness,
+      notes,
+      calories,
+      protein,
+      carbs,
+      fats,
+    } = req.body;
+
+    const day = new Date(date).toLocaleDateString("en-US", {
+      weekday: "long",
+    });
+
+    const time = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "Diet_Log!A:R",
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [
+          [
+            date, // A
+            day, // B
+            time, // C
+            mealType, // D
+            context, // E
+            proteinSource, // F
+            veggies, // G
+            carbsFood, // H
+            fatsFood, // I
+            portionNotes, // J
+            hunger, // K
+            fullness, // L
+            "", // M Image link (later)
+            notes, // N
+            calories, // O
+            protein, // P
+            carbs, // Q
+            fats, // R
+          ],
+        ],
+      },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to save diet log" });
   }
 });
 
