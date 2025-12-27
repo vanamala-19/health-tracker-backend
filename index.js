@@ -306,6 +306,24 @@ app.delete("/inventory/:row", async (req, res) => {
   }
 });
 
+app.put("/inventory/:row", express.json(), async (req, res) => {
+  try {
+    const row = Number(req.params.row);
+    const values = [req.body.values];
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `Inventory!A${row}:I${row}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update inventory" });
+  }
+});
+
 // --------------------
 // SERVER START
 // --------------------
