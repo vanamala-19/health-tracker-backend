@@ -228,7 +228,6 @@ app.put("/diet-log/:row", express.json(), async (req, res) => {
   }
 });
 
-
 // =====================
 // INVENTORY
 // =====================
@@ -292,32 +291,20 @@ app.post("/inventory", express.json(), async (req, res) => {
 
 // DELETE inventory item
 app.delete("/inventory/:row", async (req, res) => {
-  const row = Number(req.params.row);
   try {
-    await sheets.spreadsheets.batchUpdate({
+    const row = Number(req.params.row);
+
+    await sheets.spreadsheets.values.clear({
       spreadsheetId: SPREADSHEET_ID,
-      requestBody: {
-        requests: [
-          {
-            deleteDimension: {
-              range: {
-                sheetId:  /* Inventory sheetId */,
-                dimension: "ROWS",
-                startIndex: row - 1,
-                endIndex: row,
-              },
-            },
-          },
-        ],
-      },
+      range: `Inventory!A${row}:I${row}`,
     });
 
     res.json({ success: true });
   } catch (err) {
+    console.error("Inventory delete error:", err.message);
     res.status(500).json({ error: "Failed to delete inventory" });
   }
 });
-
 
 // --------------------
 // SERVER START
