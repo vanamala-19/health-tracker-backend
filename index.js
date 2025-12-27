@@ -228,6 +228,97 @@ app.put("/diet-log/:row", express.json(), async (req, res) => {
   }
 });
 
+
+// =====================
+// INVENTORY
+// =====================
+
+// GET inventory
+app.get("/inventory", async (req, res) => {
+  try {
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "Inventory!A2:I",
+      valueRenderOption: "FORMATTED_VALUE",
+    });
+
+    res.json(result.data.values || []);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch inventory" });
+  }
+});
+
+// ADD inventory item
+app.post("/inventory", express.json(), async (req, res) => {
+  try {
+    const {
+      name,
+      category,
+      quantity,
+      unit,
+      calories,
+      protein,
+      carbs,
+      fats,
+      notes,
+    } = req.body;
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "Inventory!A:I",
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [
+          [
+            name,
+            category,
+            quantity,
+            unit,
+            calories,
+            protein,
+            carbs,
+            fats,
+            notes,
+          ],
+        ],
+      },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to add inventory" });
+  }
+});
+
+// DELETE inventory item
+app.delete("/inventory/:row", async (req, res) => {
+  const row = Number(req.params.row);
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId:  /* Inventory sheetId */,
+                dimension: "ROWS",
+                startIndex: row - 1,
+                endIndex: row,
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete inventory" });
+  }
+});
+
+
 // --------------------
 // SERVER START
 // --------------------
