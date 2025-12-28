@@ -97,7 +97,7 @@ module.exports = router;
 // =====================
 
 // Get all recipes
-app.get("/recipes", async (req, res) => {
+router.get("/recipes", async (req, res) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,

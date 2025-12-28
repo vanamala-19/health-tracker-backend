@@ -1,17 +1,58 @@
-// Get full recipe by ID
-app.get("/recipes/:id", async (req, res) => {
-  const recipeId = req.params.id;
+const express = require("express");
+const router = express.Router();
+const { sheets, SPREADSHEET_ID } = require("../services/sheets");
 
+/*
+Sheets used:
+- Recipes
+- Recipe_Ingredients
+- Recipe_Cards
+*/
+
+// =====================
+// GET ALL RECIPES
+// =====================
+router.get("/", async (req, res) => {
   try {
-    // 1️⃣ Recipe metadata
-    const metaRes = await sheets.spreadsheets.values.get({
+    const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: "Recipes!A2:F",
     });
 
-    const recipeRow = (metaRes.data.values || []).find(
-      (r) => r[0] === recipeId
-    );
+    const recipes = (result.data.values || []).map((r) => ({
+      id: r[0],
+      name: r[1],
+      category: r[2],
+      servings: r[3],
+      caloriesPerServing: r[4],
+      notes: r[5] || "",
+    }));
+
+    res.json(recipes);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to load recipes" });
+  }
+});
+
+// =====================
+// GET SINGLE RECIPE (CARDS)
+// =====================
+router.get("/:id", async (req, res) => {
+  const recipeId = req.params.id;
+
+  try {
+    const [recipeRes, cardRes] = await Promise.all([
+      sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: "Recipes!A2:F",
+      }),
+      sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: "Recipe_Cards!A2:F",
+      }),
+    ]);
+
+    const recipeRow = recipeRes.data.values.find((r) => r[0] === recipeId);
 
     if (!recipeRow) {
       return res.status(404).json({ error: "Recipe not found" });
@@ -21,50 +62,25 @@ app.get("/recipes/:id", async (req, res) => {
       id: recipeRow[0],
       name: recipeRow[1],
       category: recipeRow[2],
-      servings: Number(recipeRow[3]),
-      caloriesPerServing: Number(recipeRow[4]),
+      servings: recipeRow[3],
+      caloriesPerServing: recipeRow[4],
       notes: recipeRow[5] || "",
     };
 
-    // 2️⃣ Ingredients
-    const ingRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: "Recipe_Ingredients!A2:D",
-    });
-
-    const ingredients = (ingRes.data.values || [])
-      .filter((r) => r[0] === recipeId)
-      .map((r) => ({
-        name: r[1],
-        quantity: Number(r[2]),
-        unit: r[3],
-      }));
-
-    // 3️⃣ Cards
-    const cardRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: "Recipe_Cards!A2:G",
-    });
-
     const cards = (cardRes.data.values || [])
-      .filter((r) => r[0] === recipeId)
-      .sort((a, b) => Number(a[1]) - Number(b[1]))
-      .map((r) => ({
-        order: Number(r[1]),
-        type: r[2],
-        title: r[3],
-        instruction: r[4],
-        flame: r[5] || "",
-        time: r[6] || "",
+      .filter((c) => c[0] === recipeId)
+      .map((c) => ({
+        type: c[1],
+        title: c[2],
+        instruction: c[3],
+        flame: c[4] || "",
+        time: c[5] || "",
       }));
 
-    res.json({
-      recipe,
-      ingredients,
-      cards,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch recipe" });
+    res.json({ recipe, cards });
+  } catch {
+    res.status(500).json({ error: "Failed to load recipe" });
   }
 });
+
+module.exports = router;
