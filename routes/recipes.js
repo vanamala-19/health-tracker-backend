@@ -23,8 +23,8 @@ router.get("/", async (req, res) => {
       id: r[0],
       name: r[1],
       category: r[2],
-      servings: r[3],
-      caloriesPerServing: r[4],
+      servings: Number(r[3]),
+      caloriesPerServing: Number(r[4]),
       notes: r[5] || "",
     }));
 
@@ -35,16 +35,20 @@ router.get("/", async (req, res) => {
 });
 
 // =====================
-// GET SINGLE RECIPE (CARDS)
+// GET SINGLE RECIPE (WITH INGREDIENTS + CARDS)
 // =====================
 router.get("/:id", async (req, res) => {
   const recipeId = req.params.id;
 
   try {
-    const [recipeRes, cardRes] = await Promise.all([
+    const [recipeRes, ingredientRes, cardRes] = await Promise.all([
       sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: "Recipes!A2:F",
+      }),
+      sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: "Recipe_Ingredients!A2:D",
       }),
       sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -52,6 +56,9 @@ router.get("/:id", async (req, res) => {
       }),
     ]);
 
+    // -----------------
+    // Recipe
+    // -----------------
     const recipeRow = recipeRes.data.values.find((r) => r[0] === recipeId);
 
     if (!recipeRow) {
@@ -62,23 +69,42 @@ router.get("/:id", async (req, res) => {
       id: recipeRow[0],
       name: recipeRow[1],
       category: recipeRow[2],
-      servings: recipeRow[3],
-      caloriesPerServing: recipeRow[4],
+      servings: Number(recipeRow[3]),
+      caloriesPerServing: Number(recipeRow[4]),
       notes: recipeRow[5] || "",
     };
 
+    // -----------------
+    // Ingredients
+    // -----------------
+    const ingredients = (ingredientRes.data.values || [])
+      .filter((i) => i[0] === recipeId)
+      .map((i) => ({
+        item: i[1],
+        quantity: Number(i[2]),
+        unit: i[3],
+      }));
+
+    // -----------------
+    // Cards
+    // -----------------
     const cards = (cardRes.data.values || [])
       .filter((c) => c[0] === recipeId)
       .map((c) => ({
-        type: c[1],
+        type: c[1], // info / prep / cook / finish / log
         title: c[2],
         instruction: c[3],
         flame: c[4] || "",
         time: c[5] || "",
       }));
 
-    res.json({ recipe, cards });
-  } catch {
+    res.json({
+      recipe,
+      ingredients,
+      cards,
+    });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to load recipe" });
   }
 });
