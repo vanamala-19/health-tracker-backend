@@ -3,7 +3,7 @@ const router = express.Router();
 const { sheets, SPREADSHEET_ID } = require("../google");
 
 // Diet daily summary
-router.get("/summary", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
