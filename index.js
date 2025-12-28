@@ -4,6 +4,7 @@ const cors = require("cors");
 const dietRoutes = require("./routes/diet");
 const inventoryRoutes = require("./routes/inventory");
 const recipeRoutes = require("./routes/recipes");
+const dashboardRoutes = require("./routes/dashboard");
 
 const app = express();
 app.use(cors());
@@ -18,6 +19,7 @@ app.get("/", (req, res) => {
 app.use("/diet-log", dietRoutes);
 app.use("/inventory", inventoryRoutes);
 app.use("/recipes", recipeRoutes);
+app.use("/summary", dashboardRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3000;
