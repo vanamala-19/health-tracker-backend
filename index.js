@@ -4,10 +4,11 @@ const { google } = require("googleapis");
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
-// --------------------
-// Google Sheets Auth
-// --------------------
+// =====================
+// GOOGLE SHEETS AUTH
+// =====================
 const auth = new google.auth.GoogleAuth({
   keyFile: "credentials.json",
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
@@ -17,14 +18,16 @@ const sheets = google.sheets({ version: "v4", auth });
 
 const SPREADSHEET_ID = "1zrwp89llivNkI7lfV3ewRvL_TNhmQBAustMwUDeFMrk";
 
-// --------------------
-// ROUTES
-// --------------------
-
-// Health check
+// =====================
+// HEALTH CHECK
+// =====================
 app.get("/", (req, res) => {
-  res.send("Health Tracker Backend is running 🚀");
+  res.send("✅ Health Tracker Backend is running");
 });
+
+// =====================
+// DASHBOARD DATA
+// =====================
 
 // Diet daily summary
 app.get("/summary", async (req, res) => {
@@ -34,10 +37,8 @@ app.get("/summary", async (req, res) => {
       range: "Diet_Daily_Summary!A2:E",
       valueRenderOption: "FORMATTED_VALUE",
     });
-
     res.json(result.data.values || []);
   } catch (err) {
-    console.error("Summary error:", err.message);
     res.status(500).json({ error: "Failed to fetch diet summary" });
   }
 });
@@ -50,15 +51,13 @@ app.get("/weight", async (req, res) => {
       range: "Body_Weight!A2:B",
       valueRenderOption: "FORMATTED_VALUE",
     });
-
     res.json(result.data.values || []);
   } catch (err) {
-    console.error("Weight error:", err.message);
     res.status(500).json({ error: "Failed to fetch weight data" });
   }
 });
 
-// Workout daily summary
+// Workout summary
 app.get("/workout-summary", async (req, res) => {
   try {
     const result = await sheets.spreadsheets.values.get({
@@ -66,31 +65,17 @@ app.get("/workout-summary", async (req, res) => {
       range: "Workout_Daily_Summary!A2:D",
       valueRenderOption: "FORMATTED_VALUE",
     });
-
     res.json(result.data.values || []);
   } catch (err) {
-    console.error("Workout error:", err.message);
     res.status(500).json({ error: "Failed to fetch workout summary" });
   }
 });
 
-// List all sheet names (debug helper)
-app.get("/sheets", async (req, res) => {
-  try {
-    const meta = await sheets.spreadsheets.get({
-      spreadsheetId: SPREADSHEET_ID,
-    });
+// =====================
+// DIET LOG
+// =====================
 
-    const sheetNames = meta.data.sheets.map((s) => s.properties.title);
-
-    res.json(sheetNames);
-  } catch (err) {
-    console.error("Sheets error:", err.message);
-    res.status(500).json({ error: "Failed to fetch sheet names" });
-  }
-});
-
-// diet logs
+// GET diet log
 app.get("/diet-log", async (req, res) => {
   try {
     const result = await sheets.spreadsheets.values.get({
@@ -98,14 +83,14 @@ app.get("/diet-log", async (req, res) => {
       range: "Diet_Log!A2:R",
       valueRenderOption: "FORMATTED_VALUE",
     });
-
     res.json(result.data.values || []);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch diet log" });
   }
 });
 
-app.post("/diet-log", express.json(), async (req, res) => {
+// ADD diet log
+app.post("/diet-log", async (req, res) => {
   try {
     const {
       date,
@@ -153,7 +138,7 @@ app.post("/diet-log", express.json(), async (req, res) => {
             portionNotes, // J
             hunger, // K
             fullness, // L
-            "", // M Image link (later)
+            "", // M Image
             notes, // N
             calories, // O
             protein, // P
@@ -165,90 +150,75 @@ app.post("/diet-log", express.json(), async (req, res) => {
     });
 
     res.json({ success: true });
-  } catch (err) {
-    console.error(err);
+  } catch {
     res.status(500).json({ error: "Failed to save diet log" });
   }
 });
 
+// DELETE diet log row
 app.delete("/diet-log/:row", async (req, res) => {
   try {
     const row = Number(req.params.row);
-
     await sheets.spreadsheets.values.clear({
       spreadsheetId: SPREADSHEET_ID,
       range: `Diet_Log!A${row}:R${row}`,
     });
-
     res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to delete meal" });
+  } catch {
+    res.status(500).json({ error: "Failed to delete diet log" });
   }
 });
 
-app.put("/diet-log/:row", express.json(), async (req, res) => {
+// UPDATE diet log row
+app.put("/diet-log/:row", async (req, res) => {
   try {
     const row = Number(req.params.row);
-
-    const values = [
-      [
-        req.body.date,
-        req.body.day,
-        req.body.time,
-        req.body.mealType,
-        req.body.context,
-        req.body.proteinSource,
-        req.body.veggies,
-        req.body.carbsFood,
-        req.body.fatsFood,
-        req.body.portionNotes,
-        req.body.hunger,
-        req.body.fullness,
-        "",
-        req.body.notes,
-        req.body.calories,
-        req.body.protein,
-        req.body.carbs,
-        req.body.fats,
-      ],
-    ];
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `Diet_Log!A${row}:R${row}`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values },
+      requestBody: { values: [req.body.values] },
     });
 
     res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to update meal" });
+  } catch {
+    res.status(500).json({ error: "Failed to update diet log" });
   }
 });
 
 // =====================
-// INVENTORY
+// INVENTORY (WITH FIBER)
 // =====================
+
+// Inventory columns (IMPORTANT):
+// A Name
+// B Category
+// C Quantity
+// D Unit
+// E Calories/unit
+// F Protein/unit
+// G Carbs/unit
+// H Fats/unit
+// I Fiber/unit
+// J Notes
 
 // GET inventory
 app.get("/inventory", async (req, res) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: "Inventory!A2:I",
+      range: "Inventory!A2:J",
       valueRenderOption: "FORMATTED_VALUE",
     });
-
     res.json(result.data.values || []);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch inventory" });
   }
 });
 
 // ADD inventory item
-app.post("/inventory", express.json(), async (req, res) => {
+app.post("/inventory", async (req, res) => {
   try {
     const {
       name,
@@ -259,12 +229,13 @@ app.post("/inventory", express.json(), async (req, res) => {
       protein,
       carbs,
       fats,
+      fiber,
       notes,
     } = req.body;
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: "Inventory!A:I",
+      range: "Inventory!A:J",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
@@ -277,6 +248,7 @@ app.post("/inventory", express.json(), async (req, res) => {
             protein,
             carbs,
             fats,
+            fiber,
             notes,
           ],
         ],
@@ -284,49 +256,48 @@ app.post("/inventory", express.json(), async (req, res) => {
     });
 
     res.json({ success: true });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to add inventory" });
   }
 });
 
-// DELETE inventory item
+// UPDATE inventory row
+app.put("/inventory/:row", async (req, res) => {
+  try {
+    const row = Number(req.params.row);
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `Inventory!A${row}:J${row}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [req.body.values] },
+    });
+
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Failed to update inventory" });
+  }
+});
+
+// DELETE inventory row
 app.delete("/inventory/:row", async (req, res) => {
   try {
     const row = Number(req.params.row);
 
     await sheets.spreadsheets.values.clear({
       spreadsheetId: SPREADSHEET_ID,
-      range: `Inventory!A${row}:I${row}`,
+      range: `Inventory!A${row}:J${row}`,
     });
 
     res.json({ success: true });
-  } catch (err) {
-    console.error("Inventory delete error:", err.message);
+  } catch {
     res.status(500).json({ error: "Failed to delete inventory" });
   }
 });
 
-app.put("/inventory/:row", express.json(), async (req, res) => {
-  try {
-    const row = Number(req.params.row);
-    const values = [req.body.values];
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `Inventory!A${row}:I${row}`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: { values },
-    });
-
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to update inventory" });
-  }
-});
-
-// --------------------
-// SERVER START
-// --------------------
+// =====================
+// START SERVER
+// =====================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
