@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: "Recipes!A2:F",
+      range: "Recipes!A2:G",
     });
 
     const recipes = (result.data.values || []).map((r) => ({
@@ -44,7 +44,7 @@ router.get("/:id", async (req, res) => {
     const [recipeRes, ingredientRes, cardRes] = await Promise.all([
       sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: "Recipes!A2:F",
+        range: "Recipes!A2:G",
       }),
       sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
