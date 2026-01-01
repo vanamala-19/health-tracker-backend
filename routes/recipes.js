@@ -25,17 +25,19 @@ router.get("/", async (req, res) => {
       category: r[2],
       servings: Number(r[3]),
       caloriesPerServing: Number(r[4]),
-      notes: r[5] || "",
+      proteinPerServing: Number(r[5]), // ✅ FIX
+      notes: r[6] || "", // ✅ FIX
     }));
 
     res.json(recipes);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to load recipes" });
   }
 });
 
 // =====================
-// GET SINGLE RECIPE (WITH INGREDIENTS + CARDS)
+// GET SINGLE RECIPE
 // =====================
 router.get("/:id", async (req, res) => {
   const recipeId = req.params.id;
@@ -71,7 +73,8 @@ router.get("/:id", async (req, res) => {
       category: recipeRow[2],
       servings: Number(recipeRow[3]),
       caloriesPerServing: Number(recipeRow[4]),
-      notes: recipeRow[5] || "",
+      proteinPerServing: Number(recipeRow[5]), // ✅ FIX
+      notes: recipeRow[6] || "", // ✅ FIX
     };
 
     // -----------------
@@ -81,7 +84,7 @@ router.get("/:id", async (req, res) => {
       .filter((i) => i[0] === recipeId)
       .map((i) => ({
         item: i[1],
-        quantity: Number(i[2]),
+        quantity: i[2],
         unit: i[3],
       }));
 
@@ -91,7 +94,7 @@ router.get("/:id", async (req, res) => {
     const cards = (cardRes.data.values || [])
       .filter((c) => c[0] === recipeId)
       .map((c) => ({
-        type: c[1], // info / prep / cook / finish / log
+        type: c[1],
         title: c[2],
         instruction: c[3],
         flame: c[4] || "",
