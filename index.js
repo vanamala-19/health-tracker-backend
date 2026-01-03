@@ -5,6 +5,7 @@ const dietRoutes = require("./routes/diet");
 const inventoryRoutes = require("./routes/inventory");
 const recipeRoutes = require("./routes/recipes");
 const dashboardRoutes = require("./routes/dashboard");
+const shiftLogRoutes = require("./routes/shiftLog");
 
 const app = express();
 app.use(cors());
@@ -20,6 +21,7 @@ app.use("/diet-log", dietRoutes);
 app.use("/inventory", inventoryRoutes);
 app.use("/recipes", recipeRoutes);
 app.use("/summary", dashboardRoutes);
+app.use("/shift-log", shiftLogRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3000;
