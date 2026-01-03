@@ -39,51 +39,59 @@ router.get("/", async (req, res) => {
 });
 
 // =====================
-// UPDATE SHIFT LOG (SAFE PARTIAL UPDATE)
+// UPDATE SHIFT LOG (TRULY SAFE PATCH)
 // =====================
 router.put("/:row", async (req, res) => {
   try {
     const row = Number(req.params.row);
-
     const { shift, workMode, anchorHit, gymDone, notes } = req.body;
 
-    // ✅ ONLY editable columns
-    // D → Shift
-    // E → WorkMode
-    // I → Anchor Hit
-    // J → Gym Done
-    // M → Notes
-    const values = [
-      [
-        shift || "", // D
-        workMode || "", // E
-        "", // F (Gym Time - untouched)
-        "", // G (Protein Anchor - untouched)
-        "", // H (Protein Target - untouched)
-        anchorHit || "", // I
-        gymDone || "", // J
-        "", // K (Gym Type - untouched)
-        "", // L (Day Status - untouched)
-        notes || "", // M
-      ],
-    ];
+    const updates = [];
 
-    await sheets.spreadsheets.values.update({
+    if (shift !== undefined) {
+      updates.push({ range: `Shift_Log!D${row}`, value: shift });
+    }
+
+    if (workMode !== undefined) {
+      updates.push({ range: `Shift_Log!E${row}`, value: workMode });
+    }
+
+    if (anchorHit !== undefined) {
+      updates.push({ range: `Shift_Log!I${row}`, value: anchorHit });
+    }
+
+    if (gymDone !== undefined) {
+      updates.push({ range: `Shift_Log!J${row}`, value: gymDone });
+    }
+
+    if (notes !== undefined) {
+      updates.push({ range: `Shift_Log!M${row}`, value: notes });
+    }
+
+    if (!updates.length) {
+      return res.json({ success: true });
+    }
+
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
-      range: `Shift_Log!D${row}:M${row}`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: { values },
+      requestBody: {
+        valueInputOption: "USER_ENTERED",
+        data: updates.map((u) => ({
+          range: u.range,
+          values: [[u.value]],
+        })),
+      },
     });
 
     res.json({ success: true });
   } catch (err) {
     console.error("UPDATE shift-log error:", err);
-    res.status(500).json({ error: "Failed to update shift log" });
+    res.status(500).json({ error: "Failed to update shift log safely" });
   }
 });
 
 // =====================
-// DELETE SHIFT LOG ROW (RARE USE)
+// DELETE SHIFT LOG ROW (RARE)
 // =====================
 router.delete("/:row", async (req, res) => {
   try {
