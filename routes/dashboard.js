@@ -35,7 +35,7 @@ router.get("/workout-summary", async (req, res) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: "Workout_Daily_Summary!A2:D",
+      range: "Workout_Daily_Summary!A2:F",
       valueRenderOption: "FORMATTED_VALUE",
     });
     res.json(result.data.values || []);
