@@ -94,8 +94,8 @@ router.put("/:row", async (req, res) => {
       r[4], // Min Quantity
       r[5], // Shelf Life
       purchaseDate ?? r[6], // Purchase Date
-      r[7], // Expiry (formula)
-      r[8], // Status (formula)
+      "", // Expiry (formula)
+      "", // Status (formula)
       notes ?? r[9], // Notes
     ];
 
