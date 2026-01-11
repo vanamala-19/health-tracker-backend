@@ -6,8 +6,8 @@ const inventoryRoutes = require("./routes/inventory");
 const recipeRoutes = require("./routes/recipes");
 const dashboardRoutes = require("./routes/dashboard");
 const shiftLogRoutes = require("./routes/shiftLog");
-const workoutsRoutes = require("./routes/shiftLog");
-const stepsLiveRoutes = require("./routes/shiftLog");
+const workoutsRoutes = require("./routes/workouts");
+const stepsLiveRoutes = require("./routes/stepsLive");
 
 const app = express();
 app.use(cors());
