@@ -6,6 +6,8 @@ const inventoryRoutes = require("./routes/inventory");
 const recipeRoutes = require("./routes/recipes");
 const dashboardRoutes = require("./routes/dashboard");
 const shiftLogRoutes = require("./routes/shiftLog");
+const workoutsRoutes = require("./routes/shiftLog");
+const stepsLiveRoutes = require("./routes/shiftLog");
 
 const app = express();
 app.use(cors());
@@ -22,6 +24,8 @@ app.use("/inventory", inventoryRoutes);
 app.use("/recipes", recipeRoutes);
 app.use("/summary", dashboardRoutes);
 app.use("/shift-log", shiftLogRoutes);
+app.use("/workouts", workoutsRoutes);
+app.use("/steps-live", stepsLiveRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3000;
