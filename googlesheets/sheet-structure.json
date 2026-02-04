@@ -1,0 +1,221 @@
+{
+  "spreadsheet": {
+    "id": "1zrwp89llivNkI7lfV3ewRvL_TNhmQBAustMwUDeFMrk",
+    "name": "Health Tracker Database",
+    "url": "https://docs.google.com/spreadsheets/d/1zrwp89llivNkI7lfV3ewRvL_TNhmQBAustMwUDeFMrk/edit"
+  },
+  "sheets": [
+    {
+      "name": "Diet Log",
+      "range": "A2:L1000",
+      "endpoint": "/diet-log",
+      "columns": [
+        {
+          "index": 0,
+          "name": "Date",
+          "type": "date",
+          "format": "YYYY-MM-DD"
+        },
+        {
+          "index": 1,
+          "name": "Meal Type",
+          "type": "string",
+          "values": ["Meal 1", "Meal 2", "Snack", "Mini Meal"]
+        },
+        {
+          "index": 2,
+          "name": "Context",
+          "type": "string"
+        },
+        {
+          "index": 3,
+          "name": "Protein Source",
+          "type": "string"
+        },
+        {
+          "index": 4,
+          "name": "Veggies",
+          "type": "string"
+        },
+        {
+          "index": 5,
+          "name": "Carbs Food",
+          "type": "string"
+        },
+        {
+          "index": 6,
+          "name": "Fats Food",
+          "type": "string"
+        },
+        {
+          "index": 7,
+          "name": "Portion Notes",
+          "type": "string"
+        },
+        {
+          "index": 8,
+          "name": "Calories",
+          "type": "number"
+        },
+        {
+          "index": 9,
+          "name": "Protein (g)",
+          "type": "number"
+        },
+        {
+          "index": 10,
+          "name": "Carbs (g)",
+          "type": "number"
+        },
+        {
+          "index": 11,
+          "name": "Fats (g)",
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "range": "A2:J1000",
+      "endpoint": "/inventory",
+      "columns": [
+        {
+          "index": 0,
+          "name": "Item",
+          "type": "string"
+        },
+        {
+          "index": 1,
+          "name": "Category",
+          "type": "string"
+        },
+        {
+          "index": 2,
+          "name": "Quantity",
+          "type": "number"
+        },
+        {
+          "index": 3,
+          "name": "Unit",
+          "type": "string",
+          "values": ["kg", "g", "L", "ml", "pcs", "box"]
+        },
+        {
+          "index": 4,
+          "name": "Minimum Qty",
+          "type": "number"
+        },
+        {
+          "index": 5,
+          "name": "Current Qty",
+          "type": "number"
+        },
+        {
+          "index": 6,
+          "name": "Purchase Date",
+          "type": "date",
+          "format": "DD/MM/YYYY"
+        },
+        {
+          "index": 7,
+          "name": "Expiry Date",
+          "type": "date",
+          "format": "DD/MM/YYYY"
+        },
+        {
+          "index": 8,
+          "name": "Status",
+          "type": "string",
+          "values": ["Good", "Low", "Out of Stock", "Expired"]
+        },
+        {
+          "index": 9,
+          "name": "Notes",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Recipes",
+      "range": "A2:H1000",
+      "endpoint": "/recipes",
+      "columns": [
+        {
+          "index": 0,
+          "name": "Recipe Name",
+          "type": "string"
+        },
+        {
+          "index": 1,
+          "name": "Category",
+          "type": "string"
+        },
+        {
+          "index": 2,
+          "name": "Servings",
+          "type": "number"
+        },
+        {
+          "index": 3,
+          "name": "Calories",
+          "type": "number"
+        },
+        {
+          "index": 4,
+          "name": "Protein (g)",
+          "type": "number"
+        },
+        {
+          "index": 5,
+          "name": "Carbs (g)",
+          "type": "number"
+        },
+        {
+          "index": 6,
+          "name": "Fats (g)",
+          "type": "number"
+        },
+        {
+          "index": 7,
+          "name": "Instructions",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "Shift Log",
+      "range": "A2:E1000",
+      "endpoint": "/shift-log",
+      "columns": [
+        {
+          "index": 0,
+          "name": "Date",
+          "type": "date",
+          "format": "YYYY-MM-DD"
+        },
+        {
+          "index": 1,
+          "name": "Shift Type",
+          "type": "string",
+          "values": ["Morning", "Afternoon", "Night"]
+        },
+        {
+          "index": 2,
+          "name": "Hours",
+          "type": "number"
+        },
+        {
+          "index": 3,
+          "name": "Notes",
+          "type": "string"
+        },
+        {
+          "index": 4,
+          "name": "Status",
+          "type": "string",
+          "values": ["Completed", "Pending", "Cancelled"]
+        }
+      ]
+    }
+  ]
+}
