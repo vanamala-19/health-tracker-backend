@@ -71,12 +71,12 @@ router.post("/", async (req, res) => {
             portionNotes, // J
             hunger, // K
             fullness, // L
-            "", // M image
-            notes, // N
-            calories, // O
-            protein, // P
-            carbs, // Q
-            fats, // R
+            notes, // M
+            calories, // N
+            protein, // O
+            carbs, // P
+            fats, // Q
+            JSON.stringify(mealItems || []), // R store meal items as JSON string
           ],
         ],
       },
@@ -113,6 +113,7 @@ router.put("/:row", async (req, res) => {
       protein,
       carbs,
       fats,
+      mealItems, // receive meal items from frontend
     } = req.body;
 
     const day = new Date(date).toLocaleDateString("en-US", {
@@ -138,12 +139,12 @@ router.put("/:row", async (req, res) => {
         portionNotes, // J
         hunger, // K
         fullness, // L
-        "", // M image
-        notes, // N
-        calories, // O
-        protein, // P
-        carbs, // Q
-        fats, // R
+        notes, // M
+        calories, // N
+        protein, // O
+        carbs, // P
+        fats, // Q
+        JSON.stringify(mealItems || []), // R store meal items as JSON string
       ],
     ];
 
