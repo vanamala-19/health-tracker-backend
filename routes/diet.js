@@ -41,6 +41,7 @@ router.post("/", async (req, res) => {
       protein,
       carbs,
       fats,
+      mealItems = [], // receive meal items from frontend
     } = req.body;
 
     const day = new Date(date).toLocaleDateString("en-US", {
@@ -113,7 +114,7 @@ router.put("/:row", async (req, res) => {
       protein,
       carbs,
       fats,
-      mealItems, // receive meal items from frontend
+      mealItems = [], // receive meal items from frontend
     } = req.body;
 
     const day = new Date(date).toLocaleDateString("en-US", {
