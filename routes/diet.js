@@ -27,6 +27,7 @@ router.post("/", async (req, res) => {
   try {
     const {
       date,
+      time,
       mealType,
       context,
       proteinSource,
@@ -46,11 +47,6 @@ router.post("/", async (req, res) => {
 
     const day = new Date(date).toLocaleDateString("en-US", {
       weekday: "long",
-    });
-
-    const time = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
     });
 
     await sheets.spreadsheets.values.append({
@@ -100,6 +96,7 @@ router.put("/:row", async (req, res) => {
 
     const {
       date,
+      time,
       mealType,
       context,
       proteinSource,
@@ -119,11 +116,6 @@ router.put("/:row", async (req, res) => {
 
     const day = new Date(date).toLocaleDateString("en-US", {
       weekday: "long",
-    });
-
-    const time = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
     });
 
     const values = [
