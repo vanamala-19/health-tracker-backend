@@ -73,38 +73,37 @@ router.post("/", async (req, res) => {
 router.put("/:row", async (req, res) => {
   try {
     const row = Number(req.params.row);
-
     const { quantity, purchaseDate, notes } = req.body;
 
-    // Read existing row to preserve untouched columns
-    const existing = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `Inventory!A${row}:J${row}`,
-      valueRenderOption: "FORMATTED_VALUE",
-    });
+    // Update Quantity (Column C)
+    if (quantity !== undefined) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `Inventory!C${row}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [[quantity]] },
+      });
+    }
 
-    const r = existing.data.values?.[0];
-    if (!r) return res.status(404).json({ error: "Row not found" });
+    // Update Purchase Date (Column G)
+    if (purchaseDate !== undefined) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `Inventory!G${row}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [[purchaseDate]] },
+      });
+    }
 
-    const updatedRow = [
-      r[0], // Item Name
-      r[1], // Category
-      quantity ?? r[2], // Quantity
-      r[3], // Unit
-      r[4], // Min Quantity
-      r[5], // Shelf Life
-      purchaseDate ?? r[6], // Purchase Date
-      "", // Expiry (formula)
-      "", // Status (formula)
-      notes ?? r[9], // Notes
-    ];
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `Inventory!A${row}:J${row}`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: { values: [updatedRow] },
-    });
+    // Update Notes (Column J)
+    if (notes !== undefined) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `Inventory!J${row}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [[notes]] },
+      });
+    }
 
     res.json({ success: true });
   } catch (err) {
