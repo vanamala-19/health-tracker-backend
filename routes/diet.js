@@ -10,10 +10,16 @@ router.get("/", async (req, res) => {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: "Diet_Log!A2:R",
-      valueRenderOption: "FORMATTED_VALUE",
+      valueRenderOption: "UNFORMATTED_VALUE",
     });
 
-    res.json(result.data.values || []);
+    const rows = result.data.values || [];
+    res.json(
+      rows.map((row, index) => ({
+        row: index + 2,
+        values: row,
+      })),
+    );
   } catch (err) {
     console.error("Fetch diet log failed:", err);
     res.status(500).json({ error: "Failed to fetch diet log" });

@@ -8,7 +8,7 @@ router.get("/", async (req, res) => {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: "Diet_Daily_Summary!A2:E",
-      valueRenderOption: "FORMATTED_VALUE",
+      valueRenderOption: "UNFORMATTED_VALUE",
     });
     res.json(result.data.values || []);
   } catch {
@@ -22,7 +22,7 @@ router.get("/weight", async (req, res) => {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: "Body_Weight!A2:B",
-      valueRenderOption: "FORMATTED_VALUE",
+      valueRenderOption: "UNFORMATTED_VALUE",
     });
     res.json(result.data.values || []);
   } catch {
@@ -36,7 +36,7 @@ router.get("/workout-summary", async (req, res) => {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: "Workout_Daily_Summary!A2:F",
-      valueRenderOption: "FORMATTED_VALUE",
+      valueRenderOption: "UNFORMATTED_VALUE",
     });
     res.json(result.data.values || []);
   } catch {

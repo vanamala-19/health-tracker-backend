@@ -28,10 +28,16 @@ router.get("/", async (req, res) => {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: "Shift_Log!A2:M",
-      valueRenderOption: "FORMATTED_VALUE",
+      valueRenderOption: "UNFORMATTED_VALUE",
     });
 
-    res.json(result.data.values || []);
+    const rows = result.data.values || [];
+    res.json(
+      rows.map((row, index) => ({
+        row: index + 2,
+        values: row,
+      })),
+    );
   } catch (err) {
     console.error("GET shift-log error:", err);
     res.status(500).json({ error: "Failed to fetch shift log" });
