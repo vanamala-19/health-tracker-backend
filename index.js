@@ -23,6 +23,11 @@ app.get("/", (req, res) => {
 // Protect all API routes.
 app.use(authMiddleware);
 
+// TEMP: auth verification endpoint. Remove after rollout validation.
+app.get("/auth-check", (req, res) => {
+  res.json({ ok: true, message: "Auth token accepted" });
+});
+
 // Mount routes
 app.use("/diet-log", dietRoutes);
 app.use("/inventory", inventoryRoutes);

@@ -27,6 +27,11 @@ function safeCompare(a, b) {
 }
 
 function authMiddleware(req, res, next) {
+  const method = (req.method || "").toUpperCase();
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") {
+    return next();
+  }
+
   const expectedToken = process.env.AUTH_TOKEN;
 
   if (!expectedToken) {
