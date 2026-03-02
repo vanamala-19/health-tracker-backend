@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 
+const authMiddleware = require("./middleware/auth");
 const dietRoutes = require("./routes/diet");
 const inventoryRoutes = require("./routes/inventory");
 const recipeRoutes = require("./routes/recipes");
@@ -14,10 +15,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Health check
+// Health check remains public.
 app.get("/", (req, res) => {
-  res.send("✅ Health Tracker Backend Running");
+  res.send("Health Tracker Backend Running");
 });
+
+// Protect all API routes.
+app.use(authMiddleware);
 
 // Mount routes
 app.use("/diet-log", dietRoutes);
@@ -32,5 +36,5 @@ app.use("/food-database", foodDatabaseRoutes);
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
