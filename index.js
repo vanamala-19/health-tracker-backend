@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const writeRateLimiter = require("./middleware/rateLimit");
+const requestContext = require("./middleware/requestContext");
+const errorHandler = require("./middleware/errorHandler");
+const { sheets, SPREADSHEET_ID } = require("./google");
 
 const dietRoutes = require("./routes/diet");
 const inventoryRoutes = require("./routes/inventory");
@@ -13,13 +16,47 @@ const foodDatabaseRoutes = require("./routes/foodDatabase");
 
 const app = express();
 app.set("trust proxy", 1);
-app.use(cors());
+
+const allowedOrigins = (process.env.FRONTEND_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      if (!allowedOrigins.length || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
+  }),
+);
+app.use(requestContext);
 app.use(express.json());
 app.use(writeRateLimiter);
 
 // Health check remains public.
 app.get("/", (req, res) => {
   res.send("Health Tracker Backend Running");
+});
+app.get("/health/live", (req, res) => {
+  res.json({ ok: true, uptimeSec: Math.round(process.uptime()) });
+});
+app.get("/health/ready", async (req, res, next) => {
+  try {
+    await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "Diet_Log!A1:A1",
+      majorDimension: "ROWS",
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    err.status = 503;
+    err.publicMessage = "Service not ready";
+    next(err);
+  }
 });
 
 // Mount routes
@@ -31,6 +68,10 @@ app.use("/shift-log", shiftLogRoutes);
 app.use("/workouts", workoutsRoutes);
 app.use("/steps-live", stepsLiveRoutes);
 app.use("/food-database", foodDatabaseRoutes);
+app.use((req, res) => {
+  res.status(404).json({ error: "Not found", requestId: req.requestId || null });
+});
+app.use(errorHandler);
 
 // Start server
 const PORT = process.env.PORT || 3000;

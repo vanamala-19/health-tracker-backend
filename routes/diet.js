@@ -7,6 +7,7 @@ const {
   isValidDateInput,
   badRequest,
 } = require("../utils/validation");
+const { invalidateByPrefix } = require("../middleware/cache");
 
 function validateDietPayload(payload) {
   if (!payload || typeof payload !== "object") {
@@ -27,7 +28,7 @@ function validateDietPayload(payload) {
 // =====================
 // GET DIET LOG
 // =====================
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -43,15 +44,15 @@ router.get("/", async (req, res) => {
       })),
     );
   } catch (err) {
-    console.error("Fetch diet log failed:", err);
-    res.status(500).json({ error: "Failed to fetch diet log" });
+    err.publicMessage = "Failed to fetch diet log";
+    next(err);
   }
 });
 
 // =====================
 // ADD DIET LOG (NEW MEAL)
 // =====================
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
     const payloadError = validateDietPayload(req.body);
     if (payloadError) {
@@ -111,11 +112,12 @@ router.post("/", async (req, res) => {
         ],
       },
     });
+    invalidateByPrefix("/summary");
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Add meal failed:", err);
-    res.status(500).json({ error: "Failed to save diet log" });
+    err.publicMessage = "Failed to save diet log";
+    next(err);
   }
 });
 
@@ -123,7 +125,7 @@ router.post("/", async (req, res) => {
 // UPDATE DIET LOG (EDIT)
 // 🔥 FIXED VERSION
 // =====================
-router.put("/:row", async (req, res) => {
+router.put("/:row", async (req, res, next) => {
   try {
     const row = parseSheetRow(req.params.row);
     if (!row) {
@@ -188,18 +190,19 @@ router.put("/:row", async (req, res) => {
       valueInputOption: "USER_ENTERED",
       requestBody: { values },
     });
+    invalidateByPrefix("/summary");
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Edit meal failed:", err);
-    res.status(500).json({ error: "Failed to update diet log" });
+    err.publicMessage = "Failed to update diet log";
+    next(err);
   }
 });
 
 // =====================
 // DELETE DIET LOG
 // =====================
-router.delete("/:row", async (req, res) => {
+router.delete("/:row", async (req, res, next) => {
   try {
     const row = parseSheetRow(req.params.row);
     if (!row) {
@@ -210,11 +213,12 @@ router.delete("/:row", async (req, res) => {
       spreadsheetId: SPREADSHEET_ID,
       range: `Diet_Log!A${row}:R${row}`,
     });
+    invalidateByPrefix("/summary");
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Delete meal failed:", err);
-    res.status(500).json({ error: "Failed to delete diet log" });
+    err.publicMessage = "Failed to delete diet log";
+    next(err);
   }
 });
 

@@ -24,7 +24,7 @@ M Notes             ✅ editable
 // =====================
 // GET SHIFT LOG
 // =====================
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -40,15 +40,15 @@ router.get("/", async (req, res) => {
       })),
     );
   } catch (err) {
-    console.error("GET shift-log error:", err);
-    res.status(500).json({ error: "Failed to fetch shift log" });
+    err.publicMessage = "Failed to fetch shift log";
+    next(err);
   }
 });
 
 // =====================
 // UPDATE SHIFT LOG (TRULY SAFE PATCH)
 // =====================
-router.put("/:row", async (req, res) => {
+router.put("/:row", async (req, res, next) => {
   try {
     const row = parseSheetRow(req.params.row);
     if (!row) {
@@ -96,15 +96,15 @@ router.put("/:row", async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("UPDATE shift-log error:", err);
-    res.status(500).json({ error: "Failed to update shift log safely" });
+    err.publicMessage = "Failed to update shift log safely";
+    next(err);
   }
 });
 
 // =====================
 // DELETE SHIFT LOG ROW (RARE)
 // =====================
-router.delete("/:row", async (req, res) => {
+router.delete("/:row", async (req, res, next) => {
   try {
     const row = parseSheetRow(req.params.row);
     if (!row) {
@@ -118,8 +118,8 @@ router.delete("/:row", async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("DELETE shift-log error:", err);
-    res.status(500).json({ error: "Failed to delete shift log" });
+    err.publicMessage = "Failed to delete shift log";
+    next(err);
   }
 });
 

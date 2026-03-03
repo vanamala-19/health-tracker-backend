@@ -13,7 +13,7 @@ const {
    GET INVENTORY
 ===================== */
 
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -29,7 +29,8 @@ router.get("/", async (req, res) => {
       })),
     );
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch inventory" });
+    err.publicMessage = "Failed to fetch inventory";
+    next(err);
   }
 });
 
@@ -37,7 +38,7 @@ router.get("/", async (req, res) => {
    ADD INVENTORY ITEM
 ===================== */
 
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
     const {
       name,
@@ -85,7 +86,8 @@ router.post("/", async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: "Failed to add inventory item" });
+    err.publicMessage = "Failed to add inventory item";
+    next(err);
   }
 });
 
@@ -94,7 +96,7 @@ router.post("/", async (req, res) => {
    (Quantity / Purchase Date / Notes)
 ===================== */
 
-router.put("/:row", async (req, res) => {
+router.put("/:row", async (req, res, next) => {
   try {
     const row = parseSheetRow(req.params.row);
     if (!row) {
@@ -150,7 +152,8 @@ router.put("/:row", async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: "Failed to update inventory" });
+    err.publicMessage = "Failed to update inventory";
+    next(err);
   }
 });
 
@@ -158,7 +161,7 @@ router.put("/:row", async (req, res) => {
    DELETE INVENTORY
 ===================== */
 
-router.delete("/:row", async (req, res) => {
+router.delete("/:row", async (req, res, next) => {
   try {
     const row = parseSheetRow(req.params.row);
     if (!row) {
@@ -169,8 +172,9 @@ router.delete("/:row", async (req, res) => {
       range: `Inventory!A${row}:J${row}`,
     });
     res.json({ success: true });
-  } catch {
-    res.status(500).json({ error: "Failed to delete inventory" });
+  } catch (err) {
+    err.publicMessage = "Failed to delete inventory";
+    next(err);
   }
 });
 

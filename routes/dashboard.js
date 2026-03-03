@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const { sheets, SPREADSHEET_ID } = require("../google");
+const { cacheGet } = require("../middleware/cache");
 
 // Diet daily summary
-router.get("/", async (req, res) => {
+router.get("/", cacheGet(30000), async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -11,13 +12,14 @@ router.get("/", async (req, res) => {
       valueRenderOption: "UNFORMATTED_VALUE",
     });
     res.json(result.data.values || []);
-  } catch {
-    res.status(500).json({ error: "Failed to fetch diet summary" });
+  } catch (err) {
+    err.publicMessage = "Failed to fetch diet summary";
+    next(err);
   }
 });
 
 // Body weight
-router.get("/weight", async (req, res) => {
+router.get("/weight", cacheGet(30000), async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -25,13 +27,14 @@ router.get("/weight", async (req, res) => {
       valueRenderOption: "UNFORMATTED_VALUE",
     });
     res.json(result.data.values || []);
-  } catch {
-    res.status(500).json({ error: "Failed to fetch weight data" });
+  } catch (err) {
+    err.publicMessage = "Failed to fetch weight data";
+    next(err);
   }
 });
 
 // Workout summary
-router.get("/workout-summary", async (req, res) => {
+router.get("/workout-summary", cacheGet(30000), async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -39,8 +42,9 @@ router.get("/workout-summary", async (req, res) => {
       valueRenderOption: "UNFORMATTED_VALUE",
     });
     res.json(result.data.values || []);
-  } catch {
-    res.status(500).json({ error: "Failed to fetch workout summary" });
+  } catch (err) {
+    err.publicMessage = "Failed to fetch workout summary";
+    next(err);
   }
 });
 

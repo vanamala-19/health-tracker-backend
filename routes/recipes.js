@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { sheets, SPREADSHEET_ID } = require("../services/sheets");
+const { cacheGet } = require("../middleware/cache");
 
 /*
 Sheets used:
@@ -12,7 +13,7 @@ Sheets used:
 // =====================
 // GET ALL RECIPES
 // =====================
-router.get("/", async (req, res) => {
+router.get("/", cacheGet(60000), async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -31,15 +32,15 @@ router.get("/", async (req, res) => {
 
     res.json(recipes);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to load recipes" });
+    err.publicMessage = "Failed to load recipes";
+    next(err);
   }
 });
 
 // =====================
 // GET SINGLE RECIPE
 // =====================
-router.get("/:id", async (req, res) => {
+router.get("/:id", cacheGet(60000), async (req, res, next) => {
   const recipeId = req.params.id;
 
   try {
@@ -61,7 +62,8 @@ router.get("/:id", async (req, res) => {
     // -----------------
     // Recipe
     // -----------------
-    const recipeRow = recipeRes.data.values.find((r) => r[0] === recipeId);
+    const recipeRows = recipeRes.data.values || [];
+    const recipeRow = recipeRows.find((r) => r[0] === recipeId);
 
     if (!recipeRow) {
       return res.status(404).json({ error: "Recipe not found" });
@@ -107,8 +109,8 @@ router.get("/:id", async (req, res) => {
       cards,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to load recipe" });
+    err.publicMessage = "Failed to load recipe";
+    next(err);
   }
 });
 

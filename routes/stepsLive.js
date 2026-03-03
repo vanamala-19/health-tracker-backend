@@ -35,7 +35,7 @@ async function withDateLock(dateKey, work) {
 GET LIVE STEPS (UI)
 ====================================
 */
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -45,8 +45,8 @@ router.get("/", async (req, res) => {
 
     res.json(result.data.values || []);
   } catch (err) {
-    console.error("Fetch steps failed:", err);
-    res.status(500).json({ error: "Failed to fetch steps" });
+    err.publicMessage = "Failed to fetch steps";
+    next(err);
   }
 });
 
@@ -55,7 +55,7 @@ router.get("/", async (req, res) => {
 UPSERT LIVE STEPS (ANDROID)
 ====================================
 */
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
     const { date, steps_live } = req.body;
     if (!isValidDateInput(date)) {
@@ -104,8 +104,8 @@ router.post("/", async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Live steps failed:", err);
-    res.status(500).json({ error: "Failed to save steps" });
+    err.publicMessage = "Failed to save steps";
+    next(err);
   }
 });
 

@@ -7,13 +7,14 @@ const {
   toFiniteNumber,
   badRequest,
 } = require("../utils/validation");
+const { invalidateByPrefix } = require("../middleware/cache");
 
 /*
 ====================================
 GET WORKOUTS (UI / WEB APP)
 ====================================
 */
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -23,8 +24,8 @@ router.get("/", async (req, res) => {
 
     res.json(result.data.values || []);
   } catch (err) {
-    console.error("Fetch workouts failed:", err);
-    res.status(500).json({ error: "Failed to fetch workouts" });
+    err.publicMessage = "Failed to fetch workouts";
+    next(err);
   }
 });
 
@@ -33,7 +34,7 @@ router.get("/", async (req, res) => {
 ADD WORKOUT (ANDROID / GOOGLE FIT)
 ====================================
 */
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
     const {
       date,
@@ -81,11 +82,12 @@ router.post("/", async (req, res) => {
         ],
       },
     });
+    invalidateByPrefix("/summary");
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Add workout failed:", err);
-    res.status(500).json({ error: "Failed to save workout" });
+    err.publicMessage = "Failed to save workout";
+    next(err);
   }
 });
 

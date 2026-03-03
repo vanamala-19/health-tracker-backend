@@ -7,6 +7,7 @@ const {
   toFiniteNumber,
   badRequest,
 } = require("../utils/validation");
+const { cacheGet, invalidateByPrefix } = require("../middleware/cache");
 
 function validateFoodPayload(payload) {
   if (!payload || typeof payload !== "object") {
@@ -36,7 +37,7 @@ function validateFoodPayload(payload) {
 // =====================
 // GET FOOD DATABASE
 // =====================
-router.get("/", async (req, res) => {
+router.get("/", cacheGet(60000), async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -58,15 +59,15 @@ router.get("/", async (req, res) => {
 
     res.json(formatted);
   } catch (err) {
-    console.error("Fetch food database failed:", err);
-    res.status(500).json({ error: "Failed to fetch food database" });
+    err.publicMessage = "Failed to fetch food database";
+    next(err);
   }
 });
 
 // =====================
 // ADD FOOD ITEM
 // =====================
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
     const payloadError = validateFoodPayload(req.body);
     if (payloadError) {
@@ -83,18 +84,20 @@ router.post("/", async (req, res) => {
         values: [[name, unit, calories, protein, carbs, fat]],
       },
     });
+    invalidateByPrefix("/food-database");
+    invalidateByPrefix("/recipes");
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Add food failed:", err);
-    res.status(500).json({ error: "Failed to add food item" });
+    err.publicMessage = "Failed to add food item";
+    next(err);
   }
 });
 
 // =====================
 // UPDATE FOOD ITEM
 // =====================
-router.put("/:row", async (req, res) => {
+router.put("/:row", async (req, res, next) => {
   try {
     const row = parseSheetRow(req.params.row);
     if (!row) {
@@ -116,18 +119,20 @@ router.put("/:row", async (req, res) => {
         values: [[name, unit, calories, protein, carbs, fat]],
       },
     });
+    invalidateByPrefix("/food-database");
+    invalidateByPrefix("/recipes");
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Update food failed:", err);
-    res.status(500).json({ error: "Failed to update food item" });
+    err.publicMessage = "Failed to update food item";
+    next(err);
   }
 });
 
 // =====================
 // DELETE FOOD ITEM
 // =====================
-router.delete("/:row", async (req, res) => {
+router.delete("/:row", async (req, res, next) => {
   try {
     const row = parseSheetRow(req.params.row);
     if (!row) {
@@ -138,11 +143,13 @@ router.delete("/:row", async (req, res) => {
       spreadsheetId: SPREADSHEET_ID,
       range: `Food_Database!A${row}:F${row}`,
     });
+    invalidateByPrefix("/food-database");
+    invalidateByPrefix("/recipes");
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Delete food failed:", err);
-    res.status(500).json({ error: "Failed to delete food item" });
+    err.publicMessage = "Failed to delete food item";
+    next(err);
   }
 });
 
