@@ -1,6 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const { sheets, SPREADSHEET_ID } = require("../google");
+const {
+  parseSheetRow,
+  isNonEmptyString,
+  toFiniteNumber,
+  isValidDateInput,
+  badRequest,
+} = require("../utils/validation");
 
 /* =====================
    GET INVENTORY
@@ -43,6 +50,17 @@ router.post("/", async (req, res) => {
       notes,
     } = req.body;
 
+    if (!isNonEmptyString(name)) return badRequest(res, "name is required");
+    if (!isNonEmptyString(category)) return badRequest(res, "category is required");
+    if (!isNonEmptyString(unit)) return badRequest(res, "unit is required");
+    if (toFiniteNumber(quantity) === null) return badRequest(res, "quantity must be a number");
+    if (toFiniteNumber(minQuantity) === null) {
+      return badRequest(res, "minQuantity must be a number");
+    }
+    if (purchaseDate && !isValidDateInput(purchaseDate)) {
+      return badRequest(res, "purchaseDate is invalid");
+    }
+
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
       range: "Inventory!A:J",
@@ -78,8 +96,27 @@ router.post("/", async (req, res) => {
 
 router.put("/:row", async (req, res) => {
   try {
-    const row = Number(req.params.row);
+    const row = parseSheetRow(req.params.row);
+    if (!row) {
+      return badRequest(res, "Invalid row number");
+    }
     const { quantity, purchaseDate, notes } = req.body;
+
+    if (
+      quantity === undefined &&
+      purchaseDate === undefined &&
+      notes === undefined
+    ) {
+      return badRequest(res, "At least one field is required");
+    }
+
+    if (quantity !== undefined && toFiniteNumber(quantity) === null) {
+      return badRequest(res, "quantity must be a number");
+    }
+
+    if (purchaseDate !== undefined && purchaseDate !== "" && !isValidDateInput(purchaseDate)) {
+      return badRequest(res, "purchaseDate is invalid");
+    }
 
     // Update Quantity (Column C)
     if (quantity !== undefined) {
@@ -123,7 +160,10 @@ router.put("/:row", async (req, res) => {
 
 router.delete("/:row", async (req, res) => {
   try {
-    const row = Number(req.params.row);
+    const row = parseSheetRow(req.params.row);
+    if (!row) {
+      return badRequest(res, "Invalid row number");
+    }
     await sheets.spreadsheets.values.clear({
       spreadsheetId: SPREADSHEET_ID,
       range: `Inventory!A${row}:J${row}`,

@@ -1,6 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const { sheets, SPREADSHEET_ID } = require("../google");
+const {
+  isValidDateInput,
+  toFiniteNumber,
+  badRequest,
+} = require("../utils/validation");
 
 /*
 ====================================
@@ -30,6 +35,13 @@ UPSERT LIVE STEPS (ANDROID)
 router.post("/", async (req, res) => {
   try {
     const { date, steps_live } = req.body;
+    if (!isValidDateInput(date)) {
+      return badRequest(res, "Valid date is required");
+    }
+    const liveSteps = toFiniteNumber(steps_live);
+    if (liveSteps === null || liveSteps < 0) {
+      return badRequest(res, "steps_live must be a non-negative number");
+    }
 
     const existing = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -50,7 +62,7 @@ router.post("/", async (req, res) => {
         range: `Steps_Live!A${index + 2}:C${index + 2}`,
         valueInputOption: "USER_ENTERED",
         requestBody: {
-          values: [[date, steps_live, time]],
+          values: [[date, liveSteps, time]],
         },
       });
     } else {
@@ -60,7 +72,7 @@ router.post("/", async (req, res) => {
         range: "Steps_Live!A:C",
         valueInputOption: "USER_ENTERED",
         requestBody: {
-          values: [[date, steps_live, time]],
+          values: [[date, liveSteps, time]],
         },
       });
     }

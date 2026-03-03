@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { sheets, SPREADSHEET_ID } = require("../google");
+const { parseSheetRow, badRequest } = require("../utils/validation");
 
 /*
 Shift_Log columns (A → M)
@@ -49,7 +50,11 @@ router.get("/", async (req, res) => {
 // =====================
 router.put("/:row", async (req, res) => {
   try {
-    const row = Number(req.params.row);
+    const row = parseSheetRow(req.params.row);
+    if (!row) {
+      return badRequest(res, "Invalid row number");
+    }
+
     const { shift, workMode, anchorHit, gymDone, notes } = req.body;
 
     const updates = [];
@@ -101,7 +106,10 @@ router.put("/:row", async (req, res) => {
 // =====================
 router.delete("/:row", async (req, res) => {
   try {
-    const row = Number(req.params.row);
+    const row = parseSheetRow(req.params.row);
+    if (!row) {
+      return badRequest(res, "Invalid row number");
+    }
 
     await sheets.spreadsheets.values.clear({
       spreadsheetId: SPREADSHEET_ID,

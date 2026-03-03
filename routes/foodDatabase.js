@@ -1,6 +1,37 @@
 const express = require("express");
 const router = express.Router();
 const { sheets, SPREADSHEET_ID } = require("../google");
+const {
+  parseSheetRow,
+  isNonEmptyString,
+  toFiniteNumber,
+  badRequest,
+} = require("../utils/validation");
+
+function validateFoodPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return "Request body is required";
+  }
+  if (!isNonEmptyString(payload.name)) {
+    return "name is required";
+  }
+  if (!isNonEmptyString(payload.unit)) {
+    return "unit is required";
+  }
+  if (toFiniteNumber(payload.calories) === null) {
+    return "calories must be a number";
+  }
+  if (toFiniteNumber(payload.protein) === null) {
+    return "protein must be a number";
+  }
+  if (toFiniteNumber(payload.carbs) === null) {
+    return "carbs must be a number";
+  }
+  if (toFiniteNumber(payload.fat) === null) {
+    return "fat must be a number";
+  }
+  return null;
+}
 
 // =====================
 // GET FOOD DATABASE
@@ -37,6 +68,11 @@ router.get("/", async (req, res) => {
 // =====================
 router.post("/", async (req, res) => {
   try {
+    const payloadError = validateFoodPayload(req.body);
+    if (payloadError) {
+      return badRequest(res, payloadError);
+    }
+
     const { name, unit, calories, protein, carbs, fat } = req.body;
 
     await sheets.spreadsheets.values.append({
@@ -60,7 +96,16 @@ router.post("/", async (req, res) => {
 // =====================
 router.put("/:row", async (req, res) => {
   try {
-    const row = Number(req.params.row);
+    const row = parseSheetRow(req.params.row);
+    if (!row) {
+      return badRequest(res, "Invalid row number");
+    }
+
+    const payloadError = validateFoodPayload(req.body);
+    if (payloadError) {
+      return badRequest(res, payloadError);
+    }
+
     const { name, unit, calories, protein, carbs, fat } = req.body;
 
     await sheets.spreadsheets.values.update({
@@ -84,7 +129,10 @@ router.put("/:row", async (req, res) => {
 // =====================
 router.delete("/:row", async (req, res) => {
   try {
-    const row = Number(req.params.row);
+    const row = parseSheetRow(req.params.row);
+    if (!row) {
+      return badRequest(res, "Invalid row number");
+    }
 
     await sheets.spreadsheets.values.clear({
       spreadsheetId: SPREADSHEET_ID,

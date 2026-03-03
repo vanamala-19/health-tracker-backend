@@ -1,6 +1,28 @@
 const express = require("express");
 const router = express.Router();
 const { sheets, SPREADSHEET_ID } = require("../google");
+const {
+  parseSheetRow,
+  isNonEmptyString,
+  isValidDateInput,
+  badRequest,
+} = require("../utils/validation");
+
+function validateDietPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return "Request body is required";
+  }
+  if (!isValidDateInput(payload.date)) {
+    return "Valid date is required";
+  }
+  if (!isNonEmptyString(payload.time)) {
+    return "time is required";
+  }
+  if (!isNonEmptyString(payload.mealType)) {
+    return "mealType is required";
+  }
+  return null;
+}
 
 // =====================
 // GET DIET LOG
@@ -31,6 +53,11 @@ router.get("/", async (req, res) => {
 // =====================
 router.post("/", async (req, res) => {
   try {
+    const payloadError = validateDietPayload(req.body);
+    if (payloadError) {
+      return badRequest(res, payloadError);
+    }
+
     const {
       date,
       time,
@@ -98,7 +125,15 @@ router.post("/", async (req, res) => {
 // =====================
 router.put("/:row", async (req, res) => {
   try {
-    const row = Number(req.params.row);
+    const row = parseSheetRow(req.params.row);
+    if (!row) {
+      return badRequest(res, "Invalid row number");
+    }
+
+    const payloadError = validateDietPayload(req.body);
+    if (payloadError) {
+      return badRequest(res, payloadError);
+    }
 
     const {
       date,
@@ -166,7 +201,10 @@ router.put("/:row", async (req, res) => {
 // =====================
 router.delete("/:row", async (req, res) => {
   try {
-    const row = Number(req.params.row);
+    const row = parseSheetRow(req.params.row);
+    if (!row) {
+      return badRequest(res, "Invalid row number");
+    }
 
     await sheets.spreadsheets.values.clear({
       spreadsheetId: SPREADSHEET_ID,
