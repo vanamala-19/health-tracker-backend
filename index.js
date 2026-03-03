@@ -13,6 +13,7 @@ const shiftLogRoutes = require("./routes/shiftLog");
 const workoutsRoutes = require("./routes/workouts");
 const stepsLiveRoutes = require("./routes/stepsLive");
 const foodDatabaseRoutes = require("./routes/foodDatabase");
+const referenceRoutes = require("./routes/reference");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -68,6 +69,7 @@ app.use("/shift-log", shiftLogRoutes);
 app.use("/workouts", workoutsRoutes);
 app.use("/steps-live", stepsLiveRoutes);
 app.use("/food-database", foodDatabaseRoutes);
+app.use("/reference", referenceRoutes);
 app.use((req, res) => {
   res.status(404).json({ error: "Not found", requestId: req.requestId || null });
 });

@@ -6,216 +6,58 @@
   },
   "sheets": [
     {
-      "name": "Diet Log",
-      "range": "A2:L1000",
+      "name": "Diet_Log",
       "endpoint": "/diet-log",
-      "columns": [
-        {
-          "index": 0,
-          "name": "Date",
-          "type": "date",
-          "format": "YYYY-MM-DD"
-        },
-        {
-          "index": 1,
-          "name": "Meal Type",
-          "type": "string",
-          "values": ["Meal 1", "Meal 2", "Snack", "Mini Meal"]
-        },
-        {
-          "index": 2,
-          "name": "Context",
-          "type": "string"
-        },
-        {
-          "index": 3,
-          "name": "Protein Source",
-          "type": "string"
-        },
-        {
-          "index": 4,
-          "name": "Veggies",
-          "type": "string"
-        },
-        {
-          "index": 5,
-          "name": "Carbs Food",
-          "type": "string"
-        },
-        {
-          "index": 6,
-          "name": "Fats Food",
-          "type": "string"
-        },
-        {
-          "index": 7,
-          "name": "Portion Notes",
-          "type": "string"
-        },
-        {
-          "index": 8,
-          "name": "Calories",
-          "type": "number"
-        },
-        {
-          "index": 9,
-          "name": "Protein (g)",
-          "type": "number"
-        },
-        {
-          "index": 10,
-          "name": "Carbs (g)",
-          "type": "number"
-        },
-        {
-          "index": 11,
-          "name": "Fats (g)",
-          "type": "number"
-        }
-      ]
+      "ranges": ["A2:R", "A:R"],
+      "purpose": "Diet log rows and macro totals"
     },
     {
       "name": "Inventory",
-      "range": "A2:J1000",
       "endpoint": "/inventory",
-      "columns": [
-        {
-          "index": 0,
-          "name": "Item",
-          "type": "string"
-        },
-        {
-          "index": 1,
-          "name": "Category",
-          "type": "string"
-        },
-        {
-          "index": 2,
-          "name": "Quantity",
-          "type": "number"
-        },
-        {
-          "index": 3,
-          "name": "Unit",
-          "type": "string",
-          "values": ["kg", "g", "L", "ml", "pcs", "box"]
-        },
-        {
-          "index": 4,
-          "name": "Minimum Qty",
-          "type": "number"
-        },
-        {
-          "index": 5,
-          "name": "Current Qty",
-          "type": "number"
-        },
-        {
-          "index": 6,
-          "name": "Purchase Date",
-          "type": "date",
-          "format": "DD/MM/YYYY"
-        },
-        {
-          "index": 7,
-          "name": "Expiry Date",
-          "type": "date",
-          "format": "DD/MM/YYYY"
-        },
-        {
-          "index": 8,
-          "name": "Status",
-          "type": "string",
-          "values": ["Good", "Low", "Out of Stock", "Expired"]
-        },
-        {
-          "index": 9,
-          "name": "Notes",
-          "type": "string"
-        }
-      ]
+      "ranges": ["A2:J", "A:J"],
+      "purpose": "Inventory stock and status"
     },
     {
       "name": "Recipes",
-      "range": "A2:H1000",
       "endpoint": "/recipes",
-      "columns": [
-        {
-          "index": 0,
-          "name": "Recipe Name",
-          "type": "string"
-        },
-        {
-          "index": 1,
-          "name": "Category",
-          "type": "string"
-        },
-        {
-          "index": 2,
-          "name": "Servings",
-          "type": "number"
-        },
-        {
-          "index": 3,
-          "name": "Calories",
-          "type": "number"
-        },
-        {
-          "index": 4,
-          "name": "Protein (g)",
-          "type": "number"
-        },
-        {
-          "index": 5,
-          "name": "Carbs (g)",
-          "type": "number"
-        },
-        {
-          "index": 6,
-          "name": "Fats (g)",
-          "type": "number"
-        },
-        {
-          "index": 7,
-          "name": "Instructions",
-          "type": "text"
-        }
-      ]
+      "ranges": ["A2:G", "A:G"],
+      "purpose": "Recipe master data"
     },
     {
-      "name": "Shift Log",
-      "range": "A2:E1000",
+      "name": "Shift_Log",
       "endpoint": "/shift-log",
-      "columns": [
-        {
-          "index": 0,
-          "name": "Date",
-          "type": "date",
-          "format": "YYYY-MM-DD"
-        },
-        {
-          "index": 1,
-          "name": "Shift Type",
-          "type": "string",
-          "values": ["Morning", "Afternoon", "Night"]
-        },
-        {
-          "index": 2,
-          "name": "Hours",
-          "type": "number"
-        },
-        {
-          "index": 3,
-          "name": "Notes",
-          "type": "string"
-        },
-        {
-          "index": 4,
-          "name": "Status",
-          "type": "string",
-          "values": ["Completed", "Pending", "Cancelled"]
-        }
-      ]
+      "ranges": ["A2:M", "A:M"],
+      "purpose": "Shift and routine tracking"
+    },
+    {
+      "name": "Food_Database",
+      "endpoint": "/food-database",
+      "ranges": ["A2:F", "A:F"],
+      "purpose": "Base food nutrition items"
+    },
+    {
+      "name": "Protein Source",
+      "endpoint": "/reference/protein-sources",
+      "ranges": ["A2:Z", "A1:Z1"],
+      "purpose": "Reference list for protein source suggestions"
+    },
+    {
+      "name": "calories free",
+      "endpoint": "/reference/calorie-free",
+      "ranges": ["A2:Z", "A1:Z1"],
+      "purpose": "Reference list for low-calorie food suggestions"
+    },
+    {
+      "name": "Body_Weight",
+      "endpoint": "/summary/weight",
+      "ranges": ["A2:B"],
+      "purpose": "Weight trend summary source"
+    },
+    {
+      "name": "Workout_Daily_Summary",
+      "endpoint": "/summary/workout-summary",
+      "ranges": ["A2:F"],
+      "purpose": "Workout summary source"
     }
   ]
 }
