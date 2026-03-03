@@ -1,0 +1,20 @@
+name: Render Warmup
+
+on:
+  schedule:
+    # 10:00-10:59 IST (04:30-04:59 UTC)
+    - cron: "30,45 4 * * *"
+    # 11:00-11:59 IST (05:00-05:59 UTC)
+    - cron: "0,15,30,45 5 * * *"
+    # 12:00-12:30 IST (06:00-06:30 UTC)
+    - cron: "0,15,30 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping-render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health endpoint
+        run: |
+          set -euo pipefail
+          curl -fsS "https://health-tracker-backend-z131.onrender.com/" > /dev/null
