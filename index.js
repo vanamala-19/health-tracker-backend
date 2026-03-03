@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const writeRateLimiter = require("./middleware/rateLimit");
 
 const dietRoutes = require("./routes/diet");
 const inventoryRoutes = require("./routes/inventory");
@@ -11,8 +12,10 @@ const stepsLiveRoutes = require("./routes/stepsLive");
 const foodDatabaseRoutes = require("./routes/foodDatabase");
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(cors());
 app.use(express.json());
+app.use(writeRateLimiter);
 
 // Health check remains public.
 app.get("/", (req, res) => {
