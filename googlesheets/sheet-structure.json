@@ -56,7 +56,7 @@
     {
       "name": "Workout_Daily_Summary",
       "endpoint": "/summary/workout-summary",
-      "ranges": ["A2:F"],
+      "ranges": ["A2:B"],
       "purpose": "Workout summary source"
     }
   ]

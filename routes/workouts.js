@@ -4,10 +4,41 @@ const { sheets, SPREADSHEET_ID } = require("../google");
 const {
   isNonEmptyString,
   isValidDateInput,
-  toFiniteNumber,
   badRequest,
 } = require("../utils/validation");
 const { invalidateByPrefix } = require("../middleware/cache");
+
+function normalizeDateKey(value) {
+  if (!value) return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
+
+  if (raw.includes("/")) {
+    const [d, m, y] = raw.split("/");
+    if (d && m && y) {
+      return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }
+  }
+
+  const dt = new Date(raw);
+  if (!Number.isNaN(dt.getTime())) {
+    return dt.toISOString().slice(0, 10);
+  }
+  return raw;
+}
+
+function normalizeStatus(status) {
+  const s = String(status || "")
+    .trim()
+    .toLowerCase();
+  if (["done", "workout", "workout completed", "completed", "yes"].includes(s)) {
+    return "Workout completed";
+  }
+  if (["skipped", "skip", "rest", "no", "cancelled"].includes(s)) {
+    return "Rest";
+  }
+  return null;
+}
 
 /*
 ====================================
@@ -18,7 +49,7 @@ router.get("/", async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: "Workouts_Log!A2:H",
+      range: "Workout_Daily_Summary!A2:B",
       valueRenderOption: "FORMATTED_VALUE",
     });
 
@@ -37,108 +68,49 @@ ADD WORKOUT (ANDROID / GOOGLE FIT)
 router.post("/", async (req, res, next) => {
   try {
     const { date, status } = req.body || {};
-
-    // Simple mode: date + status (Done / Skipped)
-    if (isValidDateInput(date) && isNonEmptyString(status)) {
-      const normalizedStatus = status.trim().toLowerCase();
-      if (!["done", "skipped"].includes(normalizedStatus)) {
-        return badRequest(res, "status must be Done or Skipped");
-      }
-
-      const simpleRow = [
-        date,
-        "", // day (sheet formula/manual optional)
-        "", // workout name
-        "", // duration
-        normalizedStatus === "done" ? 1 : 0, // sets proxy
-        normalizedStatus === "done" ? "Workout" : "Skipped",
-      ];
-
-      const existing = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: "Workout_Daily_Summary!A2:F",
-        valueRenderOption: "FORMATTED_VALUE",
-      });
-      const rows = existing.data.values || [];
-      const existingIndex = rows.findIndex((r) => String(r[0] || "") === date);
-
-      if (existingIndex >= 0) {
-        const rowNumber = existingIndex + 2;
-        await sheets.spreadsheets.values.update({
-          spreadsheetId: SPREADSHEET_ID,
-          range: `Workout_Daily_Summary!E${rowNumber}:F${rowNumber}`,
-          valueInputOption: "USER_ENTERED",
-          requestBody: {
-            values: [
-              [
-                normalizedStatus === "done" ? 1 : 0,
-                normalizedStatus === "done" ? "Workout" : "Skipped",
-              ],
-            ],
-          },
-        });
-      } else {
-        await sheets.spreadsheets.values.append({
-          spreadsheetId: SPREADSHEET_ID,
-          range: "Workout_Daily_Summary!A:F",
-          valueInputOption: "USER_ENTERED",
-          requestBody: { values: [simpleRow] },
-        });
-      }
-      invalidateByPrefix("/summary");
-
-      return res.json({ success: true, mode: "simple" });
-    }
-
-    // Legacy mode kept for backward compatibility with old app payload.
-    const {
-      start_time,
-      end_time,
-      activity_type,
-      workout_name,
-      duration_min,
-      source_app,
-      steps_today,
-    } = req.body || {};
-
     if (!isValidDateInput(date)) {
       return badRequest(res, "Valid date is required");
     }
-    if (!isNonEmptyString(start_time) || !isNonEmptyString(end_time)) {
-      return badRequest(res, "start_time and end_time are required");
-    }
-    if (!isNonEmptyString(activity_type)) {
-      return badRequest(res, "activity_type is required");
-    }
-    if (toFiniteNumber(duration_min) === null) {
-      return badRequest(res, "duration_min must be a number");
-    }
-    if (steps_today !== undefined && toFiniteNumber(steps_today) === null) {
-      return badRequest(res, "steps_today must be a number");
+    if (!isNonEmptyString(status)) {
+      return badRequest(res, "status is required");
     }
 
-    await sheets.spreadsheets.values.append({
+    const normalizedStatus = normalizeStatus(status);
+    if (!normalizedStatus) {
+      return badRequest(res, "status must be Workout completed or Rest");
+    }
+
+    const normalizedDate = normalizeDateKey(date);
+    const existing = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: "Workouts_Log!A:H",
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [
-          [
-            date,
-            start_time,
-            end_time,
-            activity_type,
-            workout_name,
-            duration_min,
-            source_app,
-            steps_today,
-          ],
-        ],
-      },
+      range: "Workout_Daily_Summary!A2:B",
+      valueRenderOption: "FORMATTED_VALUE",
     });
+    const rows = existing.data.values || [];
+    const existingIndex = rows.findIndex(
+      (r) => normalizeDateKey(r[0]) === normalizedDate,
+    );
+
+    if (existingIndex >= 0) {
+      const rowNumber = existingIndex + 2;
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `Workout_Daily_Summary!A${rowNumber}:B${rowNumber}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [[normalizedDate, normalizedStatus]] },
+      });
+    } else {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: "Workout_Daily_Summary!A:B",
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [[normalizedDate, normalizedStatus]] },
+      });
+    }
+
     invalidateByPrefix("/summary");
 
-    res.json({ success: true, mode: "legacy" });
+    res.json({ success: true });
   } catch (err) {
     err.publicMessage = "Failed to save workout";
     next(err);

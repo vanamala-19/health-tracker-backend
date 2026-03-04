@@ -38,7 +38,7 @@ router.get("/workout-summary", cacheGet(30000), async (req, res, next) => {
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: "Workout_Daily_Summary!A2:F",
+      range: "Workout_Daily_Summary!A2:B",
       valueRenderOption: "UNFORMATTED_VALUE",
     });
     res.json(result.data.values || []);

@@ -45,7 +45,7 @@
 
 ### Sheet: `Workout_Daily_Summary`
 - **Summary endpoint:** `/summary/workout-summary`
-- **Range used:** `Workout_Daily_Summary!A2:F`
+- **Range used:** `Workout_Daily_Summary!A2:B`
 - **Write path:** `POST /workouts` with `{ "date": "YYYY-MM-DD", "status": "Done|Skipped" }`
 
 ---
