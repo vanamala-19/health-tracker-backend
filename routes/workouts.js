@@ -36,8 +36,62 @@ ADD WORKOUT (ANDROID / GOOGLE FIT)
 */
 router.post("/", async (req, res, next) => {
   try {
+    const { date, status } = req.body || {};
+
+    // Simple mode: date + status (Done / Skipped)
+    if (isValidDateInput(date) && isNonEmptyString(status)) {
+      const normalizedStatus = status.trim().toLowerCase();
+      if (!["done", "skipped"].includes(normalizedStatus)) {
+        return badRequest(res, "status must be Done or Skipped");
+      }
+
+      const simpleRow = [
+        date,
+        "", // day (sheet formula/manual optional)
+        "", // workout name
+        "", // duration
+        normalizedStatus === "done" ? 1 : 0, // sets proxy
+        normalizedStatus === "done" ? "Workout" : "Skipped",
+      ];
+
+      const existing = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: "Workout_Daily_Summary!A2:F",
+        valueRenderOption: "FORMATTED_VALUE",
+      });
+      const rows = existing.data.values || [];
+      const existingIndex = rows.findIndex((r) => String(r[0] || "") === date);
+
+      if (existingIndex >= 0) {
+        const rowNumber = existingIndex + 2;
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `Workout_Daily_Summary!E${rowNumber}:F${rowNumber}`,
+          valueInputOption: "USER_ENTERED",
+          requestBody: {
+            values: [
+              [
+                normalizedStatus === "done" ? 1 : 0,
+                normalizedStatus === "done" ? "Workout" : "Skipped",
+              ],
+            ],
+          },
+        });
+      } else {
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: SPREADSHEET_ID,
+          range: "Workout_Daily_Summary!A:F",
+          valueInputOption: "USER_ENTERED",
+          requestBody: { values: [simpleRow] },
+        });
+      }
+      invalidateByPrefix("/summary");
+
+      return res.json({ success: true, mode: "simple" });
+    }
+
+    // Legacy mode kept for backward compatibility with old app payload.
     const {
-      date,
       start_time,
       end_time,
       activity_type,
@@ -45,7 +99,7 @@ router.post("/", async (req, res, next) => {
       duration_min,
       source_app,
       steps_today,
-    } = req.body;
+    } = req.body || {};
 
     if (!isValidDateInput(date)) {
       return badRequest(res, "Valid date is required");
@@ -84,7 +138,7 @@ router.post("/", async (req, res, next) => {
     });
     invalidateByPrefix("/summary");
 
-    res.json({ success: true });
+    res.json({ success: true, mode: "legacy" });
   } catch (err) {
     err.publicMessage = "Failed to save workout";
     next(err);
