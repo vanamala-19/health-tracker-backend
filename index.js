@@ -3,7 +3,7 @@ const cors = require("cors");
 const writeRateLimiter = require("./middleware/rateLimit");
 const requestContext = require("./middleware/requestContext");
 const errorHandler = require("./middleware/errorHandler");
-const { sheets, SPREADSHEET_ID } = require("./google");
+const { sheets, SPREADSHEET_ID, warmSheetsConnection, getSheetsHealth } = require("./google");
 
 const dietRoutes = require("./routes/diet");
 const inventoryRoutes = require("./routes/inventory");
@@ -47,12 +47,13 @@ app.get("/health/live", (req, res) => {
 });
 app.get("/health/ready", async (req, res, next) => {
   try {
-    await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: "Diet_Log!A1:A1",
-      majorDimension: "ROWS",
-    });
-    res.json({ ok: true });
+    const health = getSheetsHealth();
+    if (health.ready) {
+      return res.json({ ok: true, warmedAt: health.lastReadyOkAt });
+    }
+
+    await warmSheetsConnection();
+    res.json({ ok: true, warmedAt: Date.now() });
   } catch (err) {
     err.status = 503;
     err.publicMessage = "Service not ready";
@@ -79,4 +80,8 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  warmSheetsConnection().catch((err) => {
+    console.warn("Initial Sheets warmup failed:", err.message);
+  });
 });
+

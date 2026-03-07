@@ -7,7 +7,62 @@ const {
   isValidDateInput,
   badRequest,
 } = require("../utils/validation");
-const { invalidateByPrefix } = require("../middleware/cache");
+const { cacheGet, invalidateByPrefix } = require("../middleware/cache");
+
+function mapDietRows(rows) {
+  return rows.map((row, index) => ({
+    row: index + 2,
+    values: row,
+  }));
+}
+
+function mapFoodRows(rows) {
+  return rows.map((row, index) => ({
+    row: index + 2,
+    name: row[0],
+    unit: row[1],
+    calories: Number(row[2]),
+    protein: Number(row[3]),
+    carbs: Number(row[4]),
+    fat: Number(row[5]),
+  }));
+}
+
+function normalizeHeader(value, fallbackIndex) {
+  const text = String(value || "").trim();
+  if (!text) return `col${fallbackIndex + 1}`;
+  return (
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "") || `col${fallbackIndex + 1}`
+  );
+}
+
+function mapReferenceRows(headers, rows) {
+  const normalizedHeaders = headers.map((h, i) => normalizeHeader(h, i));
+  const items = rows
+    .filter((row) => row.some((cell) => String(cell || "").trim()))
+    .map((row) => {
+      const item = {};
+      row.forEach((cell, i) => {
+        item[normalizedHeaders[i] || `col${i + 1}`] = cell;
+      });
+      return item;
+    });
+
+  return {
+    headers: normalizedHeaders,
+    items,
+    names: Array.from(
+      new Set(
+        items
+          .map((item) => String(item[normalizedHeaders[0]] || "").trim())
+          .filter(Boolean),
+      ),
+    ),
+  };
+}
 
 function validateDietPayload(payload) {
   if (!payload || typeof payload !== "object") {
@@ -37,14 +92,59 @@ router.get("/", async (req, res, next) => {
     });
 
     const rows = result.data.values || [];
-    res.json(
-      rows.map((row, index) => ({
-        row: index + 2,
-        values: row,
-      })),
-    );
+    res.json(mapDietRows(rows));
   } catch (err) {
     err.publicMessage = "Failed to fetch diet log";
+    next(err);
+  }
+});
+
+router.get("/bootstrap", cacheGet(30000), async (req, res, next) => {
+  try {
+    const [dietRes, foodRes, proteinHeaderRes, proteinDataRes, lowHeaderRes, lowDataRes] =
+      await Promise.all([
+        sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range: "Diet_Log!A2:R",
+          valueRenderOption: "UNFORMATTED_VALUE",
+        }),
+        sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range: "Food_Database!A2:F",
+          valueRenderOption: "UNFORMATTED_VALUE",
+        }),
+        sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range: "'Protein Source'!A1:Z1",
+        }),
+        sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range: "'Protein Source'!A2:Z",
+        }),
+        sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range: "'calories free'!A1:Z1",
+        }),
+        sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range: "'calories free'!A2:Z",
+        }),
+      ]);
+
+    res.json({
+      meals: mapDietRows(dietRes.data.values || []),
+      foodDatabase: mapFoodRows(foodRes.data.values || []),
+      proteinSources: mapReferenceRows(
+        proteinHeaderRes.data.values?.[0] || [],
+        proteinDataRes.data.values || [],
+      ),
+      lowCalorie: mapReferenceRows(
+        lowHeaderRes.data.values?.[0] || [],
+        lowDataRes.data.values || [],
+      ),
+    });
+  } catch (err) {
+    err.publicMessage = "Failed to fetch diet bootstrap data";
     next(err);
   }
 });
