@@ -1,13 +1,16 @@
 const { google } = require("googleapis");
 
+// Load credentials from environment variable
+const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+
 const auth = new google.auth.GoogleAuth({
-  keyFile: "credentials.json",
+  credentials,
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
 const sheets = google.sheets({ version: "v4", auth });
 
-const SPREADSHEET_ID = "1zrwp89llivNkI7lfV3ewRvL_TNhmQBAustMwUDeFMrk";
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID || "1zrwp89llivNkI7lfV3ewRvL_TNhmQBAustMwUDeFMrk";
 
 let initPromise = null;
 let lastReadyOkAt = 0;
