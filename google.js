@@ -1,6 +1,10 @@
 const { google } = require("googleapis");
 
 // Load credentials from environment variable
+if (!process.env.GOOGLE_CREDENTIALS_JSON) {
+  throw new Error("GOOGLE_CREDENTIALS_JSON environment variable is not set");
+}
+
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
 
 const auth = new google.auth.GoogleAuth({
