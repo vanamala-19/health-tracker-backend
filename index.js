@@ -3,7 +3,12 @@ const cors = require("cors");
 const writeRateLimiter = require("./middleware/rateLimit");
 const requestContext = require("./middleware/requestContext");
 const errorHandler = require("./middleware/errorHandler");
-const { sheets, SPREADSHEET_ID, warmSheetsConnection, getSheetsHealth } = require("./google");
+const {
+  sheets,
+  SPREADSHEET_ID,
+  warmSheetsConnection,
+  getSheetsHealth,
+} = require("./google");
 
 const dietRoutes = require("./routes/diet");
 const inventoryRoutes = require("./routes/inventory");
@@ -34,6 +39,17 @@ app.use(
     },
   }),
 );
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_ORIGINS);
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization",
+  );
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  next();
+});
+
 app.use(requestContext);
 app.use(express.json());
 app.use(writeRateLimiter);
@@ -72,7 +88,9 @@ app.use("/steps-live", stepsLiveRoutes);
 app.use("/food-database", foodDatabaseRoutes);
 app.use("/reference", referenceRoutes);
 app.use((req, res) => {
-  res.status(404).json({ error: "Not found", requestId: req.requestId || null });
+  res
+    .status(404)
+    .json({ error: "Not found", requestId: req.requestId || null });
 });
 app.use(errorHandler);
 
@@ -84,4 +102,3 @@ app.listen(PORT, () => {
     console.warn("Initial Sheets warmup failed:", err.message);
   });
 });
-
