@@ -8,23 +8,16 @@ const {
   badRequest,
 } = require("../utils/validation");
 const { cacheGet, invalidateByPrefix } = require("../middleware/cache");
+const {
+  readFoodDatabaseState,
+  deriveProteinSourceReferenceData,
+  deriveLowCalorieReferenceData,
+} = require("../services/foodDatabaseSheet");
 
 function mapDietRows(rows) {
   return rows.map((row, index) => ({
     row: index + 2,
     values: row,
-  }));
-}
-
-function mapFoodRows(rows) {
-  return rows.map((row, index) => ({
-    row: index + 2,
-    name: row[0],
-    unit: row[1],
-    calories: Number(row[2]),
-    protein: Number(row[3]),
-    carbs: Number(row[4]),
-    fat: Number(row[5]),
   }));
 }
 
@@ -64,6 +57,39 @@ function mapReferenceRows(headers, rows) {
   };
 }
 
+function toRange(sheetName, range) {
+  const escaped = String(sheetName).replace(/'/g, "''");
+  return `'${escaped}'!${range}`;
+}
+
+async function readReferenceRowsFromCandidates(candidates) {
+  let lastError = null;
+
+  for (const sheetName of candidates) {
+    try {
+      const [headerRes, dataRes] = await Promise.all([
+        sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range: toRange(sheetName, "A1:Z1"),
+        }),
+        sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range: toRange(sheetName, "A2:Z"),
+        }),
+      ]);
+
+      return mapReferenceRows(
+        headerRes.data.values?.[0] || [],
+        dataRes.data.values || [],
+      );
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error("Reference sheet lookup failed");
+}
+
 function validateDietPayload(payload) {
   if (!payload || typeof payload !== "object") {
     return "Request body is required";
@@ -101,47 +127,39 @@ router.get("/", async (req, res, next) => {
 
 router.get("/bootstrap", cacheGet(30000), async (req, res, next) => {
   try {
-    const [dietRes, foodRes, proteinHeaderRes, proteinDataRes, lowHeaderRes, lowDataRes] =
-      await Promise.all([
-        sheets.spreadsheets.values.get({
-          spreadsheetId: SPREADSHEET_ID,
-          range: "Diet_Log!A2:R",
-          valueRenderOption: "UNFORMATTED_VALUE",
-        }),
-        sheets.spreadsheets.values.get({
-          spreadsheetId: SPREADSHEET_ID,
-          range: "Food_Database!A2:F",
-          valueRenderOption: "UNFORMATTED_VALUE",
-        }),
-        sheets.spreadsheets.values.get({
-          spreadsheetId: SPREADSHEET_ID,
-          range: "'Protein Source'!A1:Z1",
-        }),
-        sheets.spreadsheets.values.get({
-          spreadsheetId: SPREADSHEET_ID,
-          range: "'Protein Source'!A2:Z",
-        }),
-        sheets.spreadsheets.values.get({
-          spreadsheetId: SPREADSHEET_ID,
-          range: "'calories free'!A1:Z1",
-        }),
-        sheets.spreadsheets.values.get({
-          spreadsheetId: SPREADSHEET_ID,
-          range: "'calories free'!A2:Z",
-        }),
+    const [dietRes, foodState] = await Promise.all([
+      sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: "Diet_Log!A2:R",
+        valueRenderOption: "UNFORMATTED_VALUE",
+      }),
+      readFoodDatabaseState(),
+    ]);
+
+    let proteinSources = deriveProteinSourceReferenceData(foodState);
+    let lowCalorie = deriveLowCalorieReferenceData(foodState);
+
+    if (!proteinSources.names.length) {
+      proteinSources = await readReferenceRowsFromCandidates([
+        "Protein Source",
+        "Protein Source ",
+        "Protein_Source",
       ]);
+    }
+
+    if (!lowCalorie.names.length) {
+      lowCalorie = await readReferenceRowsFromCandidates([
+        "calories free",
+        "Calories Free",
+        "calorie free",
+      ]);
+    }
 
     res.json({
       meals: mapDietRows(dietRes.data.values || []),
-      foodDatabase: mapFoodRows(foodRes.data.values || []),
-      proteinSources: mapReferenceRows(
-        proteinHeaderRes.data.values?.[0] || [],
-        proteinDataRes.data.values || [],
-      ),
-      lowCalorie: mapReferenceRows(
-        lowHeaderRes.data.values?.[0] || [],
-        lowDataRes.data.values || [],
-      ),
+      foodDatabase: foodState.foods,
+      proteinSources,
+      lowCalorie,
     });
   } catch (err) {
     err.publicMessage = "Failed to fetch diet bootstrap data";

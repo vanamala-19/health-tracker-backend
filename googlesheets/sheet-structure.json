@@ -30,10 +30,10 @@
       "purpose": "Shift and routine tracking"
     },
     {
-      "name": "Food_Database",
+      "name": "FOOD_DATABASE",
       "endpoint": "/food-database",
-      "ranges": ["A2:F", "A:F"],
-      "purpose": "Base food nutrition items"
+      "ranges": ["A1:ZZ1", "A2:ZZ", "A:ZZ"],
+      "purpose": "Formula-backed food nutrition master with protected derived fields"
     },
     {
       "name": "Protein Source",

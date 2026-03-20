@@ -3,61 +3,56 @@ const router = express.Router();
 const { sheets, SPREADSHEET_ID } = require("../google");
 const {
   parseSheetRow,
-  isNonEmptyString,
-  toFiniteNumber,
   badRequest,
 } = require("../utils/validation");
 const { cacheGet, invalidateByPrefix } = require("../middleware/cache");
 
-function validateFoodPayload(payload) {
-  if (!payload || typeof payload !== "object") {
-    return "Request body is required";
-  }
-  if (!isNonEmptyString(payload.name)) {
-    return "name is required";
-  }
-  if (!isNonEmptyString(payload.unit)) {
-    return "unit is required";
-  }
-  if (toFiniteNumber(payload.calories) === null) {
-    return "calories must be a number";
-  }
-  if (toFiniteNumber(payload.protein) === null) {
-    return "protein must be a number";
-  }
-  if (toFiniteNumber(payload.carbs) === null) {
-    return "carbs must be a number";
-  }
-  if (toFiniteNumber(payload.fat) === null) {
-    return "fat must be a number";
-  }
-  return null;
+const {
+  readFoodDatabaseState,
+  validateFoodCreatePayload,
+  createFoodAppendRow,
+  getEditableFoodUpdates,
+  getFoodRowClearRange,
+} = require("../services/foodDatabaseSheet");
+
+function toSheetRange(sheetName, range) {
+  const escaped = String(sheetName).replace(/'/g, "''");
+  return `'${escaped}'!${range}`;
+}
+
+function invalidateFoodCaches() {
+  invalidateByPrefix("/food-database");
+  invalidateByPrefix("/recipes");
+  invalidateByPrefix("/reference");
+  invalidateByPrefix("/diet-log");
 }
 
 // =====================
 // GET FOOD DATABASE
 // =====================
+router.get("/bootstrap", cacheGet(60000), async (req, res, next) => {
+  try {
+    const state = await readFoodDatabaseState();
+    res.json({
+      foods: state.foods,
+      meta: {
+        sheetName: state.sheetName,
+        headers: state.headers,
+        editableFields: state.editableFields,
+        availableLabels: state.availableLabels,
+        availableCategories: state.availableCategories,
+      },
+    });
+  } catch (err) {
+    err.publicMessage = "Failed to fetch food database bootstrap";
+    next(err);
+  }
+});
+
 router.get("/", cacheGet(60000), async (req, res, next) => {
   try {
-    const result = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: "Food_Database!A2:F",
-      valueRenderOption: "UNFORMATTED_VALUE",
-    });
-
-    const rows = result.data.values || [];
-
-    const formatted = rows.map((row, index) => ({
-      row: index + 2,
-      name: row[0],
-      unit: row[1],
-      calories: Number(row[2]),
-      protein: Number(row[3]),
-      carbs: Number(row[4]),
-      fat: Number(row[5]),
-    }));
-
-    res.json(formatted);
+    const state = await readFoodDatabaseState();
+    res.json(state.foods);
   } catch (err) {
     err.publicMessage = "Failed to fetch food database";
     next(err);
@@ -69,23 +64,23 @@ router.get("/", cacheGet(60000), async (req, res, next) => {
 // =====================
 router.post("/", async (req, res, next) => {
   try {
-    const payloadError = validateFoodPayload(req.body);
+    const state = await readFoodDatabaseState();
+    const payloadError = validateFoodCreatePayload(req.body, state);
     if (payloadError) {
       return badRequest(res, payloadError);
     }
 
-    const { name, unit, calories, protein, carbs, fat } = req.body;
+    const values = createFoodAppendRow(state, req.body);
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: "Food_Database!A:F",
+      range: toSheetRange(state.sheetName, "A:ZZ"),
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [[name, unit, calories, protein, carbs, fat]],
+        values: [values],
       },
     });
-    invalidateByPrefix("/food-database");
-    invalidateByPrefix("/recipes");
+    invalidateFoodCaches();
 
     res.json({ success: true });
   } catch (err) {
@@ -104,23 +99,36 @@ router.put("/:row", async (req, res, next) => {
       return badRequest(res, "Invalid row number");
     }
 
-    const payloadError = validateFoodPayload(req.body);
-    if (payloadError) {
-      return badRequest(res, payloadError);
+    const state = await readFoodDatabaseState();
+    const existing = state.foods.find((food) => food.row === row);
+    if (!existing) {
+      return res.status(404).json({ error: "Food item not found" });
     }
 
-    const { name, unit, calories, protein, carbs, fat } = req.body;
+    const { error, updates } = getEditableFoodUpdates(state, req.body || {});
+    if (error) {
+      return badRequest(res, error);
+    }
+    if (!updates.length) {
+      return badRequest(
+        res,
+        "Only editable food fields can be updated (price, labels, category, notes)",
+      );
+    }
 
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `Food_Database!A${row}:F${row}`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[name, unit, calories, protein, carbs, fat]],
-      },
-    });
-    invalidateByPrefix("/food-database");
-    invalidateByPrefix("/recipes");
+    await Promise.all(
+      updates.map((update) =>
+        sheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: toSheetRange(state.sheetName, `${update.columnLetter}${row}`),
+          valueInputOption: "USER_ENTERED",
+          requestBody: {
+            values: [[update.value]],
+          },
+        }),
+      ),
+    );
+    invalidateFoodCaches();
 
     res.json({ success: true });
   } catch (err) {
@@ -139,12 +147,13 @@ router.delete("/:row", async (req, res, next) => {
       return badRequest(res, "Invalid row number");
     }
 
+    const state = await readFoodDatabaseState();
+
     await sheets.spreadsheets.values.clear({
       spreadsheetId: SPREADSHEET_ID,
-      range: `Food_Database!A${row}:F${row}`,
+      range: getFoodRowClearRange(state, row),
     });
-    invalidateByPrefix("/food-database");
-    invalidateByPrefix("/recipes");
+    invalidateFoodCaches();
 
     res.json({ success: true });
   } catch (err) {

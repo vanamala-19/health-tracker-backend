@@ -27,9 +27,10 @@
 - **Primary endpoint:** `/shift-log`
 - **Ranges used:** `Shift_Log!A2:M`, `Shift_Log!A:M`
 
-### Sheet: `Food_Database`
+### Sheet: `FOOD_DATABASE`
 - **Primary endpoint:** `/food-database`
-- **Ranges used:** `Food_Database!A2:F`, `Food_Database!A:F`
+- **Ranges used:** `FOOD_DATABASE!A1:ZZ1`, `FOOD_DATABASE!A2:ZZ`, `FOOD_DATABASE!A:ZZ`
+- **Notes:** Formula-backed food master. Only safe frontend edits such as `price`, `labels`, `category`, and `notes` should be written directly.
 
 ### Sheet: `Protein Source`
 - **Reference endpoint:** `/reference/protein-sources`
@@ -61,6 +62,7 @@
 ## Important Notes
 
 - Do not rename tabs listed above unless backend ranges are updated in code.
-- Do not reorder/delete expected columns for active routes.
+- Keep `FOOD_DATABASE` headers stable so backend field mapping stays predictable.
+- Avoid editing formula-derived food columns directly from the app unless backend logic is updated first.
 - Keep header rows intact.
 - Use ISO date format (`YYYY-MM-DD`) where applicable.
