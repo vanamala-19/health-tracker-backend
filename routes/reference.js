@@ -2,11 +2,6 @@ const express = require("express");
 const router = express.Router();
 const { sheets, SPREADSHEET_ID } = require("../google");
 const { cacheGet } = require("../middleware/cache");
-const {
-  readPriceDatabaseState,
-  deriveProteinSourceReferenceData,
-  deriveLowCalorieReferenceData,
-} = require("../services/priceDatabaseSheet");
 
 function normalizeHeader(value, fallbackIndex) {
   const text = String(value || "").trim();
@@ -72,14 +67,11 @@ async function readSheetRecordsFromCandidates(candidates) {
 
 router.get("/protein-sources", cacheGet(60000), async (req, res, next) => {
   try {
-    let data = deriveProteinSourceReferenceData(await readPriceDatabaseState());
-    if (!data.names.length) {
-      data = await readSheetRecordsFromCandidates([
-        "Protein Source",
-        "Protein Source ",
-        "Protein_Source",
-      ]);
-    }
+    const data = await readSheetRecordsFromCandidates([
+      "Protein Source",
+      "Protein Source ",
+      "Protein_Source",
+    ]);
     res.json(data);
   } catch (err) {
     err.publicMessage = "Failed to fetch protein source references";
@@ -89,14 +81,11 @@ router.get("/protein-sources", cacheGet(60000), async (req, res, next) => {
 
 router.get("/calorie-free", cacheGet(60000), async (req, res, next) => {
   try {
-    let data = deriveLowCalorieReferenceData(await readPriceDatabaseState());
-    if (!data.names.length) {
-      data = await readSheetRecordsFromCandidates([
-        "calories free",
-        "Calories Free",
-        "calorie free",
-      ]);
-    }
+    const data = await readSheetRecordsFromCandidates([
+      "calories free",
+      "Calories Free",
+      "calorie free",
+    ]);
     res.json(data);
   } catch (err) {
     err.publicMessage = "Failed to fetch low-calorie references";

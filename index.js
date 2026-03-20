@@ -18,6 +18,7 @@ const shiftLogRoutes = require("./routes/shiftLog");
 const workoutsRoutes = require("./routes/workouts");
 const stepsLiveRoutes = require("./routes/stepsLive");
 const foodDatabaseRoutes = require("./routes/foodDatabase");
+const priceDatabaseRoutes = require("./routes/priceDatabase");
 const referenceRoutes = require("./routes/reference");
 
 const app = express();
@@ -70,7 +71,7 @@ app.use("/shift-log", shiftLogRoutes);
 app.use("/workouts", workoutsRoutes);
 app.use("/steps-live", stepsLiveRoutes);
 app.use("/food-database", foodDatabaseRoutes);
-app.use("/price-database", foodDatabaseRoutes);
+app.use("/price-database", priceDatabaseRoutes);
 app.use("/reference", referenceRoutes);
 app.use((req, res) => {
   res

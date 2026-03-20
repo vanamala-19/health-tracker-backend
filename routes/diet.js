@@ -9,10 +9,8 @@ const {
 } = require("../utils/validation");
 const { cacheGet, invalidateByPrefix } = require("../middleware/cache");
 const {
-  readPriceDatabaseState,
-  deriveProteinSourceReferenceData,
-  deriveLowCalorieReferenceData,
-} = require("../services/priceDatabaseSheet");
+  readFoodDatabaseState,
+} = require("../services/foodDatabaseSheet");
 
 function mapDietRows(rows) {
   return rows.map((row, index) => ({
@@ -127,33 +125,24 @@ router.get("/", async (req, res, next) => {
 
 router.get("/bootstrap", cacheGet(30000), async (req, res, next) => {
   try {
-    const [dietRes, foodState] = await Promise.all([
+    const [dietRes, foodState, proteinSources, lowCalorie] = await Promise.all([
       sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: "Diet_Log!A2:R",
         valueRenderOption: "UNFORMATTED_VALUE",
       }),
-      readPriceDatabaseState(),
-    ]);
-
-    let proteinSources = deriveProteinSourceReferenceData(foodState);
-    let lowCalorie = deriveLowCalorieReferenceData(foodState);
-
-    if (!proteinSources.names.length) {
-      proteinSources = await readReferenceRowsFromCandidates([
+      readFoodDatabaseState(),
+      readReferenceRowsFromCandidates([
         "Protein Source",
         "Protein Source ",
         "Protein_Source",
-      ]);
-    }
-
-    if (!lowCalorie.names.length) {
-      lowCalorie = await readReferenceRowsFromCandidates([
+      ]),
+      readReferenceRowsFromCandidates([
         "calories free",
         "Calories Free",
         "calorie free",
-      ]);
-    }
+      ]),
+    ]);
 
     res.json({
       meals: mapDietRows(dietRes.data.values || []),
