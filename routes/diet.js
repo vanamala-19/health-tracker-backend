@@ -9,10 +9,10 @@ const {
 } = require("../utils/validation");
 const { cacheGet, invalidateByPrefix } = require("../middleware/cache");
 const {
-  readFoodDatabaseState,
+  readPriceDatabaseState,
   deriveProteinSourceReferenceData,
   deriveLowCalorieReferenceData,
-} = require("../services/foodDatabaseSheet");
+} = require("../services/priceDatabaseSheet");
 
 function mapDietRows(rows) {
   return rows.map((row, index) => ({
@@ -133,7 +133,7 @@ router.get("/bootstrap", cacheGet(30000), async (req, res, next) => {
         range: "Diet_Log!A2:R",
         valueRenderOption: "UNFORMATTED_VALUE",
       }),
-      readFoodDatabaseState(),
+      readPriceDatabaseState(),
     ]);
 
     let proteinSources = deriveProteinSourceReferenceData(foodState);

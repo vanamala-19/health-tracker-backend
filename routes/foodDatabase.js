@@ -8,12 +8,9 @@ const {
 const { cacheGet, invalidateByPrefix } = require("../middleware/cache");
 
 const {
-  readFoodDatabaseState,
-  validateFoodCreatePayload,
-  createFoodAppendRow,
-  getEditableFoodUpdates,
-  getFoodRowClearRange,
-} = require("../services/foodDatabaseSheet");
+  readPriceDatabaseState,
+  getEditablePriceUpdates,
+} = require("../services/priceDatabaseSheet");
 
 function toSheetRange(sheetName, range) {
   const escaped = String(sheetName).replace(/'/g, "''");
@@ -22,6 +19,7 @@ function toSheetRange(sheetName, range) {
 
 function invalidateFoodCaches() {
   invalidateByPrefix("/food-database");
+  invalidateByPrefix("/price-database");
   invalidateByPrefix("/recipes");
   invalidateByPrefix("/reference");
   invalidateByPrefix("/diet-log");
@@ -32,7 +30,7 @@ function invalidateFoodCaches() {
 // =====================
 router.get("/bootstrap", cacheGet(60000), async (req, res, next) => {
   try {
-    const state = await readFoodDatabaseState();
+    const state = await readPriceDatabaseState();
     res.json({
       foods: state.foods,
       meta: {
@@ -51,7 +49,7 @@ router.get("/bootstrap", cacheGet(60000), async (req, res, next) => {
 
 router.get("/", cacheGet(60000), async (req, res, next) => {
   try {
-    const state = await readFoodDatabaseState();
+    const state = await readPriceDatabaseState();
     res.json(state.foods);
   } catch (err) {
     err.publicMessage = "Failed to fetch food database";
@@ -64,25 +62,10 @@ router.get("/", cacheGet(60000), async (req, res, next) => {
 // =====================
 router.post("/", async (req, res, next) => {
   try {
-    const state = await readFoodDatabaseState();
-    const payloadError = validateFoodCreatePayload(req.body, state);
-    if (payloadError) {
-      return badRequest(res, payloadError);
-    }
-
-    const values = createFoodAppendRow(state, req.body);
-
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
-      range: toSheetRange(state.sheetName, "A:ZZ"),
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [values],
-      },
+    res.status(405).json({
+      error:
+        "PRICE_DATABASE is formula-driven. Creating new rows is disabled until backend-managed formulas are implemented.",
     });
-    invalidateFoodCaches();
-
-    res.json({ success: true });
   } catch (err) {
     err.publicMessage = "Failed to add food item";
     next(err);
@@ -99,20 +82,20 @@ router.put("/:row", async (req, res, next) => {
       return badRequest(res, "Invalid row number");
     }
 
-    const state = await readFoodDatabaseState();
+    const state = await readPriceDatabaseState();
     const existing = state.foods.find((food) => food.row === row);
     if (!existing) {
       return res.status(404).json({ error: "Food item not found" });
     }
 
-    const { error, updates } = getEditableFoodUpdates(state, req.body || {});
+    const { error, updates } = getEditablePriceUpdates(state, req.body || {});
     if (error) {
       return badRequest(res, error);
     }
     if (!updates.length) {
       return badRequest(
         res,
-        "Only editable food fields can be updated (price, labels, category, notes)",
+        "Only price can be updated from PRICE_DATABASE",
       );
     }
 
@@ -142,20 +125,10 @@ router.put("/:row", async (req, res, next) => {
 // =====================
 router.delete("/:row", async (req, res, next) => {
   try {
-    const row = parseSheetRow(req.params.row);
-    if (!row) {
-      return badRequest(res, "Invalid row number");
-    }
-
-    const state = await readFoodDatabaseState();
-
-    await sheets.spreadsheets.values.clear({
-      spreadsheetId: SPREADSHEET_ID,
-      range: getFoodRowClearRange(state, row),
+    res.status(405).json({
+      error:
+        "PRICE_DATABASE rows are formula-driven. Deleting rows is disabled from the API.",
     });
-    invalidateFoodCaches();
-
-    res.json({ success: true });
   } catch (err) {
     err.publicMessage = "Failed to delete food item";
     next(err);

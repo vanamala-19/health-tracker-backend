@@ -3,10 +3,10 @@ const router = express.Router();
 const { sheets, SPREADSHEET_ID } = require("../google");
 const { cacheGet } = require("../middleware/cache");
 const {
-  readFoodDatabaseState,
+  readPriceDatabaseState,
   deriveProteinSourceReferenceData,
   deriveLowCalorieReferenceData,
-} = require("../services/foodDatabaseSheet");
+} = require("../services/priceDatabaseSheet");
 
 function normalizeHeader(value, fallbackIndex) {
   const text = String(value || "").trim();
@@ -72,7 +72,7 @@ async function readSheetRecordsFromCandidates(candidates) {
 
 router.get("/protein-sources", cacheGet(60000), async (req, res, next) => {
   try {
-    let data = deriveProteinSourceReferenceData(await readFoodDatabaseState());
+    let data = deriveProteinSourceReferenceData(await readPriceDatabaseState());
     if (!data.names.length) {
       data = await readSheetRecordsFromCandidates([
         "Protein Source",
@@ -89,7 +89,7 @@ router.get("/protein-sources", cacheGet(60000), async (req, res, next) => {
 
 router.get("/calorie-free", cacheGet(60000), async (req, res, next) => {
   try {
-    let data = deriveLowCalorieReferenceData(await readFoodDatabaseState());
+    let data = deriveLowCalorieReferenceData(await readPriceDatabaseState());
     if (!data.names.length) {
       data = await readSheetRecordsFromCandidates([
         "calories free",

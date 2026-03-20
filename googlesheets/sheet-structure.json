@@ -30,10 +30,16 @@
       "purpose": "Shift and routine tracking"
     },
     {
-      "name": "FOOD_DATABASE",
+      "name": "PRICE_DATABASE",
+      "endpoint": "/price-database",
+      "ranges": ["A1:ZZ1", "A2:ZZ"],
+      "purpose": "Formula-backed protein-price sheet; frontend only edits price"
+    },
+    {
+      "name": "PRICE_DATABASE",
       "endpoint": "/food-database",
-      "ranges": ["A1:ZZ1", "A2:ZZ", "A:ZZ"],
-      "purpose": "Formula-backed food nutrition master with protected derived fields"
+      "ranges": ["A1:ZZ1", "A2:ZZ"],
+      "purpose": "Compatibility nutrition view sourced from PRICE_DATABASE"
     },
     {
       "name": "Protein Source",

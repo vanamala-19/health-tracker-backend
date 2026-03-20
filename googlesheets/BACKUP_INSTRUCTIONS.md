@@ -58,7 +58,7 @@ async function backupDietLog(sheets, SPREADSHEET_ID, fs) {
 - `Inventory`
 - `Recipes`
 - `Shift_Log`
-- `FOOD_DATABASE`
+- `PRICE_DATABASE`
 - `Body_Weight`
 - `Workout_Daily_Summary`
 

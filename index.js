@@ -70,6 +70,7 @@ app.use("/shift-log", shiftLogRoutes);
 app.use("/workouts", workoutsRoutes);
 app.use("/steps-live", stepsLiveRoutes);
 app.use("/food-database", foodDatabaseRoutes);
+app.use("/price-database", foodDatabaseRoutes);
 app.use("/reference", referenceRoutes);
 app.use((req, res) => {
   res

@@ -27,10 +27,10 @@
 - **Primary endpoint:** `/shift-log`
 - **Ranges used:** `Shift_Log!A2:M`, `Shift_Log!A:M`
 
-### Sheet: `FOOD_DATABASE`
-- **Primary endpoint:** `/food-database`
-- **Ranges used:** `FOOD_DATABASE!A1:ZZ1`, `FOOD_DATABASE!A2:ZZ`, `FOOD_DATABASE!A:ZZ`
-- **Notes:** Formula-backed food master. Only safe frontend edits such as `price`, `labels`, `category`, and `notes` should be written directly.
+### Sheet: `PRICE_DATABASE`
+- **Primary endpoints:** `/price-database`, `/food-database`
+- **Ranges used:** `PRICE_DATABASE!A1:ZZ1`, `PRICE_DATABASE!A2:ZZ`
+- **Notes:** Formula-backed protein-price sheet. Only `price` is writable from the app; all derived nutrition/cost fields stay protected.
 
 ### Sheet: `Protein Source`
 - **Reference endpoint:** `/reference/protein-sources`
@@ -62,7 +62,7 @@
 ## Important Notes
 
 - Do not rename tabs listed above unless backend ranges are updated in code.
-- Keep `FOOD_DATABASE` headers stable so backend field mapping stays predictable.
-- Avoid editing formula-derived food columns directly from the app unless backend logic is updated first.
+- Keep `PRICE_DATABASE` headers stable so backend field mapping stays predictable.
+- Avoid editing formula-derived price/nutrition columns directly from the app unless backend logic is updated first.
 - Keep header rows intact.
 - Use ISO date format (`YYYY-MM-DD`) where applicable.
